@@ -1,0 +1,67 @@
+---
+name: merak-new-file
+description: 在 <ASSISTANT_ROOT> 下新写入任何 Markdown 文件时强制调用。负责为新文件建立加载链（上游 / 管辖文件 / 同级联动）并校验指针清晰度；不决定文件是否应该创建。
+---
+
+# merak-new-file
+
+新文件创建时的加载链兜底 skill。它只管一件事：任何 `<ASSISTANT_ROOT>` 下新建的 `.md` 文件，必须能回答"从哪里被读到、读完会带出什么、同层要同步谁"。
+
+## 触发
+
+- 在 `<ASSISTANT_ROOT>` 下新写入任何 `.md` 文件。
+- `merak-create-project` / `merak-write-progress` / `merak-close-node` / `merak-weekly-review`（新周与归档文件）等流程中新建 `.md` 文件时同步调用。
+- 直接 Write / Edit 生成新 `.md`，且未经过其他 skill 时，也必须调用。
+
+## 加载链字段
+
+标题之后必须有：
+
+```markdown
+## 加载链（上下游）
+
+**上游**：`[文件路径] §[节名]` — [什么情境触发读取本文件]
+
+**管辖文件（下游）：**
+- `[路径]` — [何时继续读取]
+
+**同级联动：**
+- `[路径]` — [什么操作需要同步]
+```
+
+字段规则：
+
+- **上游必填**：必须写具体路径 + 节名或具体 skill，不写"前文 / 本项目 / 相关文件"。
+- **管辖文件（下游）有则写**：终端节点没有下游时可省略整段。
+- **同级联动有则写**：无同级联动时可省略整段。
+- **下级文件只写增量**：不重复上级规则；冲突时以更严格规则为准。
+
+## 常用上游
+
+| 新文件类型 | 上游写法 |
+|---|---|
+| 项目 `_overview.md` | `01 Projects/00.projects_agent.md` — 任务进入该项目时加载 |
+| progress 管家文件 | `[项目]/_overview.md` — 需查阅推进记录时进入 |
+| progress 展开子文件 | `[项目]/_progress/[管家文件].md` — 推论链节点详记 |
+| 项目主文档 | `[项目]/_overview.md` — 项目核心产出入口 |
+| 周归档文件 | `00 Focus Zone/_本周.md` / `merak-weekly-review` — 周复盘归档 |
+
+## 执行步骤
+
+1. 确认新文件路径位于 `<ASSISTANT_ROOT>`。
+2. 判断文件角色：项目入口 / 主文档 / progress 管家 / progress 子文件 / 周归档 / 其他。
+3. 生成或补齐 `## 加载链（上下游）`。
+4. 检查上游是否具体、下游/同级是否只在有必要时写。
+5. 若上游或同级关系不清，先停下向[用户称呼]确认；不要用泛泛描述补空。
+
+## 边界
+
+- 不替代 `merak-create-project`：项目目录、portfolio、overview 骨架仍归 merak-create-project。
+- 不替代 `merak-write-progress`：推论链、段间转换、progress 子文件结构仍归 merak-write-progress。
+- 不替代 `merak-close-node`：节点闭合多文件同步仍归 merak-close-node。
+- 不批量重写旧文件；只作用于新建文件，或用户明确要求补加载链的既有文件。
+
+
+
+
+

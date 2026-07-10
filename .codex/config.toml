@@ -1,0 +1,50 @@
+# PGH dreaming for Codex — 运行时配置模板
+#
+# 部署时由 AI 按 §-1 部署协议替换占位符：
+# - <CODEX_HOME>：Codex 配置目录，通常是 ~/.codex
+# - <ASSISTANT_ROOT>：assistant 知识库根目录
+#
+# 本文件只提供 PGH 运行所需的最小配置（模型硬锁 + hooks）。
+# 用户自己的 marketplaces / plugins / mcp_servers / desktop / projects 等
+# 本地设置不属于模板，部署时保留用户既有 config，只并入下面的 [features] 与 [[hooks.*]] 段。
+
+model = "gpt-5.6-terra"
+model_reasoning_effort = "ultra"
+
+# Subagent 并发与递归约束
+[agents]
+max_threads = 4
+max_depth = 1
+
+[features]
+hooks = true
+
+# --- PGH active hooks ---
+# compact 后重新注入身份层（session_start.py 读 persona SOUL + USER）；
+# 逐消息注入思考协议与上下文路由；告别触发 daily-review。
+# 时间感知 / 更重的节点路由 / 无人值守代谢由 AGENTS.md §R 与（可选的）06:10 定时 automation 承担。
+
+[[hooks.SessionStart]]
+matcher = "compact"
+[[hooks.SessionStart.hooks]]
+type = "command"
+command = "<PYTHON_BIN> '<CODEX_HOME>/hooks/session_start.py'"
+timeout = 5
+
+[[hooks.UserPromptSubmit]]
+matcher = ""
+[[hooks.UserPromptSubmit.hooks]]
+type = "command"
+command = "<PYTHON_BIN> '<CODEX_HOME>/hooks/thinking_protocol.py'"
+timeout = 5
+[[hooks.UserPromptSubmit.hooks]]
+type = "command"
+command = "<PYTHON_BIN> '<CODEX_HOME>/hooks/session_context_check.py'"
+timeout = 5
+
+[[hooks.UserPromptSubmit]]
+matcher = "晚安|今天就到这儿|收工"
+[[hooks.UserPromptSubmit.hooks]]
+type = "command"
+command = "<PYTHON_BIN> '<CODEX_HOME>/hooks/session_end.py'"
+timeout = 5
