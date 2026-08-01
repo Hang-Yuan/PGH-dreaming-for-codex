@@ -20,9 +20,15 @@ max_depth = 1
 hooks = true
 
 # --- PGH active hooks ---
-# compact 后重新注入身份层（session_start.py 读 persona SOUL + USER）；
-# 逐消息注入思考协议与上下文路由；告别触发 daily-review。
-# 时间感知 / 更重的节点路由 / 无人值守代谢由 AGENTS.md §R 与（可选的）06:10 定时 automation 承担。
+# 现役恰好三项，白名单管理——`hooks/` 里出现未注册的脚本即算漂移：
+#   timesense.py         逐消息注入真实当前时间
+#   thinking_protocol.py 逐消息注入思考协议
+#   session_start.py     compact 后重新注入身份层（读 persona SOUL + USER）
+#
+# **没有告别 hook。** 道别不触发固化：当日工作在会话转写里过夜（转写就是 L0 原始源），
+# 由 OS 排程在**日界线 + 30 分钟**跑 daily-dream 处理刚闭窗的那个逻辑日。日界线由部署期
+# 作息访谈决定（02:00-06:00 任一整点），不是固定值——见 AGENTS.md §时间感知。
+# 已退役的 session_end.py / session_context_check.py 见 hooks/_retired_20260801/。
 
 [[hooks.SessionStart]]
 matcher = "compact"
@@ -39,12 +45,5 @@ command = "<PYTHON_BIN> '<CODEX_HOME>/hooks/thinking_protocol.py'"
 timeout = 5
 [[hooks.UserPromptSubmit.hooks]]
 type = "command"
-command = "<PYTHON_BIN> '<CODEX_HOME>/hooks/session_context_check.py'"
-timeout = 5
-
-[[hooks.UserPromptSubmit]]
-matcher = "晚安|今天就到这儿|收工"
-[[hooks.UserPromptSubmit.hooks]]
-type = "command"
-command = "<PYTHON_BIN> '<CODEX_HOME>/hooks/session_end.py'"
+command = "<PYTHON_BIN> '<CODEX_HOME>/hooks/timesense.py'"
 timeout = 5

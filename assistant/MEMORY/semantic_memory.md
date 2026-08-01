@@ -18,7 +18,7 @@ updated: 2026-06-27
 
 **同级联动：**
 - `episodic_memory.md` — semantic 条目升格来源或降级去处。
-- `00.记忆区_agent.md` — 升降、衰减、毕业规则（唯一权威源）。
+- `00.memory_agent.md` — 升降、衰减、毕业规则（唯一权威源）。
 - `MEMORY_LOG.md` — 记忆代谢流水。
 - `USER/USER.md` / `SOUL/persona/persona_SOUL.md` / `~/.codex/skills/` — 毕业目标（终态身份层）。
 
@@ -28,7 +28,7 @@ updated: 2026-06-27
 
 本文件是语义级 schema 的**中间工作区**（4-6 星，等毕业进身份层）。**不启动注入**——白天对运行时不可见，仅在夜间被 dream 作为代谢对照基线读取（代谢期是 semantic 唯一被读取的时机）。主文件极简；证据、来源、命中记录、演化记录全部写入 `_archive/semantic_archive.md`。
 
-升降星 / 毕业规则：权威源 = `00.记忆区_agent.md §升格判准 / §semantic 衰减 / §毕业`。
+升降星 / 毕业规则：权威源 = `00.memory_agent.md §升格判准 / §semantic 衰减 / §毕业`。
 
 ---
 

@@ -1,4 +1,0 @@
-interface:
-  display_name: "Nightly memory dream"
-  short_description: "Replay [AI 名字] session transcripts and execute daily & Sunday memory metabolism with coverage verification"
-  default_prompt: "Use $merak-dream to replay today’s [AI 名字] sessions and run controlled memory metabolism."

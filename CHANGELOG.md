@@ -8,6 +8,41 @@ Predictive Generative Harness for Codex · **dreaming** 线的模板版本迭代
 - dreaming 与旧 PGH 5.x 模板线分流：两条线互不追溯、互不升级。旧线用户若要迁到 dreaming，按 `§-1` 重新部署。
 - 每次发布只记录公开模板结构、入口协议、初始化流程、hook / skill / assistant 骨架变化。
 
+## v6.2.0 · 排程驱动固化 + daily-dream 单链 + skill 更名去前缀 + 架构说明书
+
+与 Claude 端 v6.2.0 对齐。固化触发从「会话内道别」翻转为**操作系统排程**。旧路径依赖「道别 → 排一次性任务 → 会话恰好活到触发时刻」，这条链任一环挂掉就静默丢一天，且只能靠次日人工发现。本版把触发装进 launchd / 任务计划程序 / systemd timer，与会话生死无关。
+
+### 节律与排程
+
+- **新增 `scripts/install_schedule.py`**：部署期问作息（入睡 / 起床 / 夜间留机 / IANA 时区），推出该部署的**日界线**（02:00–06:00 任一整点），把固化排在日界线 + 30 分钟，装进操作系统排程后回查并写收据。长期要调用的脚本同时复制到 `~/.pgh/scripts/<runtime>/`，临时 clone 删掉也不断路。
+- **日界线改为部署期变量**：模板里的 `06` 只是默认值，安装时按作息答案改写两处口径行（`AGENTS.md §时间感知` + `MEMORY/00.memory_agent.md §逻辑日期`）。原先 v6.1.0 写死的 `06:10 定时无头代谢`一并作废——早睡早起的部署者用固定值会每天把一段工作归到错误的日子，且全程不报错。
+- **`extract_daily_transcripts.py` 自解析窗口**：日界线与 IANA 时区都从排程收据读（顶层字段优先，早期安装的 `acceptance` 嵌套兜底），并把取值来源打到 stderr。`--boundary-hour` / `--timezone` 降级为覆盖用参数，正常流程不传——传死值会整体平移抽取窗口，而 manifest 的日期、计数、路径全都自洽，平移在输出里看不出来。
+- **新增 `scripts/verify_first_run.py`**：首跑验收。核排程自己写进 `~/.pgh/natural_runs.<runtime>.jsonl` 的结构化凭据 + 地面证据 + 验收当刻的 job 状态。凭据只在带着安装期写进 job 定义的 proof 时才记 `source=os-scheduler`，手工跑包装器记 `manual-wrapper` 且翻不绿。
+- **新增 `scripts/run_scheduled_dream.py`**：排程调用的包装器，含 in-flight 锁与事务边界。
+- **`--smoke` 是 `READY` 的前提**：加了它才跑 headless 实跑，且跑在启用 job **之前**——跑不通就回滚正文与排程。不加不会阻止安装，但收据落 `state=INSTALLED_SMOKE_NOT_RUN`，永远到不了 `READY`；「CLI 真能被调起来」无法从静态检查推出，而排程的真跑在夜里没人看着。事后可用 `--smoke-only` 单独补跑。
+
+### skills
+
+- **skill 名去掉 v5 线前缀**：`merak-close-node` → `close-node`，`merak-write-progress` → `write-progress`，`merak-create-project` → `create-project`，`merak-new-file` → `new-file`，`merak-week-sync` → `week-sync`。那个前缀是 v5 线的命名遗留，两端命名从此对齐。**从 v5 / v6.0–v6.1 升上来的部署要同步改现役文件里的旧名**——`scripts/audit_stale_routes.py` 会抓残留。
+- **三 skill 合并为 `daily-dream` 单链**：`merak-daily-review` / `merak-weekly-review` 退役进 `.codex/skills/_retired_20260801/`，`merak-dream` 改名 `daily-dream` 并吸收工作固化——phase A 工作固化 → phase B 记忆代谢，目标逻辑日为周日时追加周段。三个独立 skill 各自读一遍转写、各自判一次日期，边界重叠处会重复固化或漏固化；单链把日期解析、真读转写、事务提交收在一处。
+- **道别不再触发固化**：`daily-dream` 明确不在「晚安 / 收工 / 今天到这」时调用。当日工作在 L0 转写里过夜，由次晨排程处理。
+- `week-sync` 首会话增加断档核查，查出昨夜事务未闭合时提示补跑。
+
+### hooks
+
+- **收敛到三项**：留 `timesense.py` / `thinking_protocol.py` / `session_start.py`；退役 `session_end.py`（按告别语触发固化，机制整体作废）与 `session_context_check.py`（逐消息提醒，与 `AGENTS.md §行为路由` 规则重复），移入 `hooks/_retired_20260801/`，部署时不复制。`config.toml` 同步摘掉两处注册——只删脚本不摘注册会让运行时每轮报一次找不到命令。
+
+### 文档
+
+- **新增 `docs/architecture/`**：七份架构说明书（`README` / `01_topology` / `02_agents` / `03_memory_flow` / `04_work_memory_flow` / `05_runtime` / `06_cadence_and_gates`）。
+- **新增 `docs/schedule_interview.md`**：作息访谈的规格与推算规则单一权威源——四问的问法、日界线推算、夜间留机的平台差异（锁屏 / 关显示器可以，**合盖不行**：macOS 合盖默认睡眠，接电源也不解除）、各状态的复位动作。`AGENTS.md §0` 只留问法与动作。
+- `assistant/MEMORY/00.记忆区_agent.md` 更名 `00.memory_agent.md`，与 Claude 端同名。
+
+### 机械闸
+
+- **新增 `scripts/audit_stale_routes.py`**：现役权威树的旧路由机械闸。指向已退役 skill（含 `merak-week-sync` 这类 v5 旧名）、写死固化时刻、写死逻辑日窗口、把告别当固化触发——四类都不会报错，只会让新部署跑在一个已不存在的架构上。判据可 grep，历史区（`_retired_*/` / CHANGELOG / ITERATION_LOG）不在扫描范围。
+- 随仓发布四套回归（`test_install_schedule` / `test_verify_first_run` / `test_stale_routes` / `test_release_boundary`），部署后可自查。
+
 ## v6.1.0 · semantic 退注入 + 全量活跃会话复盘 + 记忆系统结构
 
 dreaming 起点之后第一次 feature 级更新，与 Claude 端 v6.1.0 对齐：记忆架构（semantic 退出启动注入）、daily-review / dream 升级为当日全量活跃会话复盘、记忆区 agent 补全结构性全景节、Focus Zone 周工作台机制。

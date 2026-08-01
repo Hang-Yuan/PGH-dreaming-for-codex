@@ -2,7 +2,9 @@
 
 ## §-1 · 部署 / 迁移协议（首次部署专用 / 完成后 AI 自删本节）
 
-**触发条件**：用户把 PGH dreaming for Codex（v6.1.0）GitHub 链接发给 AI，并要求“帮我装到本机”或“迁移旧 PGH”。
+**触发条件**：用户把 PGH dreaming for Codex（v6.2.0）GitHub 链接发给 AI，并要求“帮我装到本机”或“迁移旧 PGH”。
+
+**迁移来源（禁止新装）**：`https://github.com/Hang-Yuan/codex-code-harness`（v5 legacy 线）只作存量取证源。用户拿那个链接来要求新装时，重定向到本仓库。
 
 **核心理念**：用户只给入口指令；AI 自己完成下载、部署、旧数据识别、迁移和验证。部署成功后，本节由 AI 从 `AGENTS.md` 中删除。
 
@@ -16,11 +18,17 @@
 4. 复制模板文件：
    - `assistant/` → `<ASSISTANT_ROOT>/`
    - `.codex/` → `<CODEX_HOME>/`
+   - `scripts/` 与 `docs/` → `<CODEX_HOME>/`（**不可省**，见下）
 5. 替换占位符：`<ASSISTANT_ROOT>`、`<CODEX_HOME>`、`<PYTHON_BIN>`（可用的 Python 3 命令）。
+
+> **第 4 步为什么必须带 `scripts/` 与 `docs/`**：只复制 `assistant/` 与 `.codex/` 的话，临时
+> clone 一删，改作息（重跑安装器）、卸载排程、week-sync 调 `verify_first_run.py` 全部断路。
+> 安装器自己会把要长期调用的脚本复制到 `~/.pgh/scripts/<runtime>/` 并让排程只引用那份副本，故排程本身
+> 不受影响；但用户日后手动重跑需要一份留在运行时目录下的源。
 6. 检测旧 PGH 痕迹：旧 USER、长期记忆、项目区、MEMORY、SOUL/persona、hooks、skills、旧入口文件。
 7. 若发现旧系统：先备份旧目录，再迁移已有用户内容到 dreaming 结构；迁移成功视为已初始化，可跳过 §0。
 8. 若未发现旧系统：保留 §0，启动首次初始化访谈。
-9. 部署后验证：入口文件可读、assistant 目录存在、hooks 文件存在、`config.toml` 可被识别、frontmatter 可被识别。
+9. 部署后验证：入口文件可读、assistant 目录存在、hooks 文件存在（现役恰好三项：`timesense.py` / `thinking_protocol.py` / `session_start.py`）、`config.toml` 可被识别、frontmatter 可被识别、`scripts/install_schedule.py` 与 `docs/schedule_interview.md` 在位。
 10. 完成后从 `AGENTS.md` 删除本节；若保留 §0，则下一轮按 §0 继续初始化。
 
 ### 迁移边界
@@ -62,7 +70,51 @@
 - 这周最想推进哪一项？
 - 有没有近期截止 / 约束 / 风险？
 
-→ **项目区导入**：用户列出的每个项目调 merak-create-project skill。
+→ **项目区导入**：用户列出的每个项目调 create-project skill。
+
+**1.4 作息与夜间留机**（→ 日界线 + 排程安装）
+
+四问，一次一问，不要打包成表格让人填。规格与推算规则见 `docs/schedule_interview.md`（本节只给问法与动作，判据在那里）。
+
+- **问 1 · 作息**：你通常几点睡、几点起？（大概就行，我用它来定"一天"的分界线——比如你两点睡九点起，那凌晨一点还算你的"今天"。）
+- **问 2 · 夜间留机**：每日固化会在你睡着后自动跑一次，几分钟。这需要机器开着、不进睡眠。你晚上方便让它开着吗？（笔记本要接电源；**锁屏 / 关显示器都行，但别合盖**——macOS 合盖默认睡眠，接电源也不解除。）
+- **问 3 · 跑完关机**：跑完要不要帮你关机？
+- **问 4 · 时区**：你的 IANA 时区名是什么（如 `Asia/Shanghai`）？Windows 上自动探测拿不到 IANA 名，不传会一直非 READY。
+
+> **为什么必须问**：固化跑在夜里，读的是"昨天"的转写；而"昨天"的边界取决于作息。设错不会报错，只会**每天都有一段工作被归到错误的日子**。故不能用默认值糊过去。
+
+→ **装排程**（问完立即执行，不留到最后）：
+
+```bash
+python3 scripts/install_schedule.py --runtime codex \
+  --sleep HH:MM --wake HH:MM --timezone Asia/Shanghai \
+  --assistant-root <ASSISTANT_ROOT> --smoke
+```
+
+问 3 答"要"再加 `--shutdown-after`。脚本自己推日界线、落进两处口径行（`AGENTS.md §时间感知` 与 `MEMORY/00.memory_agent.md §逻辑日期`）、把要长期调用的脚本复制到 `~/.pgh/scripts/<runtime>/`、装进操作系统排程、回查并写收据。
+
+**`--smoke` 是 `READY` 的前提**：加了它才跑 headless 实跑，而它是「CLI 真能被调起来」的唯一实证（未登录 / 参数改名 / 沙箱被拒都只在真跑时现形）。smoke 跑在启用 job **之前**——跑不通就回滚正文、不留排程。不加不会阻止安装，但收据落 `state=INSTALLED_SMOKE_NOT_RUN`，到不了 `READY`，也就不能对用户说"装好了"；事后补跑用 `--smoke-only`。
+
+装完之后重跑要用持久副本，不要用临时 clone 里的路径：
+`python3 ~/.pgh/scripts/codex/install_schedule.py ...`（clone 删掉后仓库那份就没了）。
+
+**推完先念给用户确认**：装之前把推出来的日界线与固化时刻念出来等他一句确认——「按你 HH:MM 睡、HH:MM 起，我把你的『一天』切在 **HH:00**，固化排在 **HH:MM**。对吗？」他说不对就用 `--boundary-hour HH` 显式覆盖。日界线设错不报错，只会每天把一段工作归到错误的日子，而错误发生在夜里没人看着。
+
+**回报纪律**：念出收据里的 `state`。只有 `READY` 才可以说"装好了"；其余状态一律念出具体待办与复位动作。且**「装好了」不等于「已经在跑了」**——跑成功要等首跑后核收据 `acceptance` 两位，周段最晚等第一个周一凌晨那趟。
+
+→ **首跑验收**（次日首个真人会话由 week-sync 自动调，也可手动）：
+
+```bash
+python3 ~/.pgh/scripts/codex/verify_first_run.py --runtime codex --assistant-root <ASSISTANT_ROOT>
+```
+
+它核的是**排程自己写的结构化凭据**（`~/.pgh/natural_runs.codex.jsonl`）加地面证据，再加验收当刻的 job 状态。凭据只在环境里带着当次安装写进 job 定义的 proof 时才记 `source=os-scheduler`；手工跑包装器记 `manual-wrapper`，翻不绿。这正是要区分的：排程没装成时用户得每天记着手工补，忘一次就静默丢一天。
+
+凭据里两个时刻都要念：`scheduled_at` 是 job 声明的**名义触发时刻**，`fired_at` 是**实际开跑**的墙钟；唤醒补触发时两者差几个小时，故「排程按它自己声明的时刻在跑」只有前者答得上。名义时刻只来自 job 定义，手工跑填不出。收据的 `acceptance` 里两者并列（`first_run_natural_scheduled_at` / `first_run_natural_fired_at`，周段同理）。已装机器升级脚本后要重跑一次安装器——旧 job 没有名义时刻，之后的自然运行会写空值凭据，验收保持待验并报复位动作。
+
+**别把手工跑包装器说成「首次自然运行已发生」**——那只是包装器成功路径测试。自然运行要等 OS job 到点自己触发（或唤醒补触发）。重装会换代，换代后旧 job 的凭据不再算数；job 装完被停用或命令被改掉，旧凭据也不再算数。
+
+答"晚上不能留机"时不要装完就算：如实说明当夜固化会漏，但**漏掉的日子由次日首个真人会话自动补**——`week-sync` 查出断档后后台自动调 `daily-dream`，从最早那天起逐日补，一次一天，上限三个有效工作日；目标逻辑日为周日时那趟含周段。积压超过三天时补最近三天并明示更早的信号已接受丢失，要追更早的由他显式指定日期。补跑失败不推进探针，次日首会话再试。**这是闸不是建议**：漏跑发生在夜里没人在场，只提示等用户开口的话，恢复就取决于他有没有注意到那行提示。
 
 ---
 
@@ -179,7 +231,7 @@
 2. 读 `<ASSISTANT_ROOT>/USER/USER.md`
 3. 读 `<ASSISTANT_ROOT>/长期记忆.md` §当前处境 + §时间轴
 4. 读 `<ASSISTANT_ROOT>/00 专注区/_本周.md`
-5. 调用 merak-week-sync skill
+5. 调用 week-sync skill
 
 ### 按需层
 
@@ -197,7 +249,7 @@
 3. 按加载链下沉到下一层文件
 4. 汇报项目推进到哪、断点在哪，由用户选下一步方向
 
-新建项目：确认后调用 `merak-create-project` skill。
+新建项目：确认后调用 `create-project` skill。
 
 ### 启动回复
 
@@ -294,13 +346,13 @@ PGH dreaming 默认内置两个 sub-agent：
 
 | 情境 | 动作 |
 |---|---|
-| 项目阶段性收尾 | 调用 `merak-close-node` skill，N 级提议 |
-| 项目推进过程需要记录 | 调用 `merak-write-progress` skill |
-| 新建项目 | 调用 `merak-create-project` skill |
-| `<ASSISTANT_ROOT>/` 下新写 `.md` 文件 | 调用 `merak-new-file` skill |
-| 用户触发复盘 / 周日 daily-review 自动触发 | 调用 `merak-weekly-review` skill |
-| 用户要求本轮总结 / 交接 | 调用 `merak-daily-review` skill |
-| 06:10 定时记忆回放 / 缺梦补扫 / 周日记忆载荷 | 调用 `merak-dream` skill |
+| 项目阶段性收尾 | 调用 `close-node` skill，N 级提议 |
+| 项目推进过程需要记录 | 调用 `write-progress` skill |
+| 新建项目 | 调用 `create-project` skill |
+| `<ASSISTANT_ROOT>/` 下新写 `.md` 文件 | 调用 `new-file` skill |
+| 用户触发复盘 / 目标逻辑日为周日的排程运行 | 调用 `daily-dream` skill（周段随之触发）|
+| 用户要求本轮总结 / 交接 | 调用 `daily-dream` skill |
+| 排程定时记忆回放（日界线 + 30 分钟）/ 缺梦补扫 / 周日记忆载荷 | 调用 `daily-dream` skill |
 | 当前处境过时 | 提出更新判断；获[用户称呼]确认后覆盖 `长期记忆.md §当前处境`，N/C 按内容判定 |
 | 跨周工作节点 | 追加 `长期记忆.md §详细周录`，N 级 |
 | 架构 / skill / hook / 协议变更 | 追加 ITERATION_LOG，即时版本化 |
@@ -322,7 +374,7 @@ PGH dreaming 默认内置两个 sub-agent：
 
 - **白天**：不向记忆池写入。工作结论经 close-node 固化进工作库（项目主文档 / `_progress/` / `_本周`）；校准信号以原文留在 L0 转写里。唯一例外：close-node 节点内 ≥2 独立事件可日间直升 episodic（N 级）。
 - **白天零注入**（v6.1.0）：semantic 池退到幕后，白天不进运行时上下文。运行时的共同世界模型底座 = **USER + SOUL + AGENTS.md §R 三件套身份层**（启动注入）。
-- **夜间（dream）**：可由 daily-review 道别时排定，或由 `<CODEX_HOME>/automations/` 的 06:10 定时任务在全新无头进程里自动跑 → 回放前一闭合逻辑日的全量转写 → 升星 / 升格 / 候补 / 衰减 / 项目语境快轨，全部操作写 MEMORY_LOG 留账。semantic 退注入后，代谢期是 semantic 唯一被读取的时机。
+- **夜间（daily-dream）**：由 OS 排程在**日界线 + 30 分钟**（部署期作息访谈决定，不是固定值）拉全新无头进程自动跑 → 回放刚闭合那个逻辑日的全量转写 → 升星 / 升格 / 候补 / 衰减 / 项目语境快轨，全部操作写 MEMORY_LOG 留账。semantic 退注入后，代谢期是 semantic 唯一被读取的时机。
 - **L0 转写不是记忆文件**：完美保真、永远在场，是 dream 回放的唯一输入，不维护、不注入。
 
 ### M.3 · 写入授权
@@ -348,7 +400,7 @@ PGH dreaming 默认内置两个 sub-agent：
 - semantic ↔ episodic 允许下行（衰减 / 降星 / 休眠）
 - 默认动作 = 遗忘；代谢时大量丢弃才是健康机制
 
-具体星级阶梯 / 衰减阈值 / 升降星事务 / 四态状态机 / 毕业剥壳字段 → `MEMORY/00.记忆区_agent.md`。
+具体星级阶梯 / 衰减阈值 / 升降星事务 / 四态状态机 / 毕业剥壳字段 → `MEMORY/00.memory_agent.md`。
 
 ---
 
@@ -358,9 +410,9 @@ PGH dreaming 默认内置两个 sub-agent：
 |---|---|
 | 启动序列文件读取失败 | 告知路径，确认重建或跳过 |
 | 记忆写入与权威源冲突 | 停止，呈现冲突，等裁决 |
-| 专注区文件未纳入 `_本周.md` | weekly-review 步骤 2 账实核对处理；遗漏 N 级告知 |
-| semantic 持续满载不降 | 触发 weekly-review 深度代谢 |
-| skill 未发现 | 检查 `<CODEX_HOME>/skills/merak-*` |
+| 专注区文件未纳入 `_本周.md` | daily-dream 周段账实核对处理；遗漏 N 级告知 |
+| semantic 持续满载不降 | daily-dream 周段容量强制清理；持续则提阈值调参 |
+| skill 未发现 | 检查 `<CODEX_HOME>/skills/` 下对应目录 |
 | hook 报错 | 告知用户检查 `config.toml` |
 | 疑似智能异常 | [用户称呼]判定“不是[AI 名字]”/“停，感觉不对” → 当前会话停所有写入，转只读，等授权 |
 | 智能异常恢复 | [用户称呼]授权后定位异常会话起点，touched 文件全部恢复到会话开始前；期间所有改动一概不作数 |
