@@ -10,7 +10,7 @@ last_updated: 2026-06-28
 ## 加载链（上下游）
 
 **上游（由谁加载本文件）：**
-不在启动序列必须层。按需加载（审查记忆操作历史时）；dream / weekly-review 周日载荷经 storage-agent 写入。
+不在启动序列必须层。按需加载（审查记忆操作历史时）；daily-dream / weekly-dream / quarterly-archive 经 storage-agent 写入。
 
 **同级联动：**
 - `00.memory_agent.md` — 写入格式 / 代谢规则 / 判断锚点（规则权威）
@@ -27,7 +27,7 @@ last_updated: 2026-06-28
 
 **MEMORY_LOG** 追踪记忆系统三层（episodic / semantic / identity）的代谢流水。包含原子事件日志 + 周复盘汇总 + 毕业事件审计。
 
-节路由 / 收录边界权威源 = `00.memory_agent.md §MEMORY_LOG 收录边界`。写入格式与节级护栏权威源 = `storage-agent.md §log 写入格式护栏`。周复盘条目完整模板权威源 = `weekly-review/SKILL.md §MEMORY_LOG 周复盘条目`。本文件不维护模板副本（v5.4 起防双源发散）。
+节路由 / 收录边界权威源 = `00.memory_agent.md §MEMORY_LOG 收录边界`。写入格式与节级护栏权威源 = `storage-agent.md §log 写入格式护栏`。周复盘执行权威源 = `weekly-dream/SKILL.md`。本文件不维护模板副本（v5.4 起防双源发散）。
 
 ---
 

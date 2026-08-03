@@ -53,12 +53,12 @@ updated: YYYY-MM-DD
 
 ## 认知模式
 
-> 由 §0 初始化访谈 + 后续 weekly-review 从 semantic_memory 毕业逐步填充。
+> 由 §0 初始化访谈 + 后续 weekly-dream 生成候选、用户 C verdict 后逐步填充。
 > 初始 0 条 schema；按用户实际拆解出多少条就有多少条，采用三段式格式：核心命题 / 触发情境 / 预测范围。
 
 ---
 
 ## 协作注意事项
 
-> 由 §0 初始化访谈 + 后续 weekly-review 毕业逐步填充。
+> 由 §0 初始化访谈 + 后续 weekly-dream 生成候选、用户 C verdict 后逐步填充。
 > 初始 0 条；按用户实际表达的协作偏好动态生成。

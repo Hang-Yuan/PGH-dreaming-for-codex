@@ -88,7 +88,7 @@ V5_SKILL_PREFIX = "me" + "rak" + "-"
 RULES = [
     Rule("retired-skill",
          r"\b(daily-review|weekly-review|" + V5_SKILL_PREFIX + r"[a-z-]+)\b",
-         "指向已退役的 skill 名。现役链是 daily-dream phase A/B + Sunday weekly load；"
+         "指向已退役的 skill 名。现役链是 daily-dream phase A/B，周日条件转 weekly-dream，季度点再转 quarterly-archive detect；"
          "留着旧名会让 agent 去调一个不存在的 skill，表现是静默不执行那一段。"),
     Rule("hardcoded-dream-time",
          r"\b0[0-9]:(10|30)\b(?!\s*[·)]?\s*(示例|example))|固定\s*06:00",

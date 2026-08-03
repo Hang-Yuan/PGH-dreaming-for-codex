@@ -1,12 +1,11 @@
 ---
 name: daily-dream
 description: Daily work consolidation plus memory metabolism as one chain. Invoked automatically with no arguments by the OS schedule after the day boundary; also on "run daily-dream", "backfill YYYY-MM-DD", "the dream missed a day", or when week-sync reports a gap and the user says to backfill. **Not** invoked on goodbyes ("that's it for today", "good night") — parting does not consolidate; the day's work is handled by the next morning's scheduled run.
-updated: 2026-08-01
 ---
 
 # Daily Dream
 
-One chain, two phases: **phase A work consolidation** (work library) → **phase B memory metabolism** (memory pools). When the target logical date is a Sunday, a **weekly load** follows phase B. Execute steps 1→9 in order. Do not skip a step and do not downgrade one to "optional if needed".
+One chain, two phases: **phase A work consolidation** (work library) → **phase B memory metabolism** (memory pools). When the target logical date is Sunday, Step 7 conditionally invokes the independent `weekly-dream`; only that skill may invoke `quarterly-archive detect`. Execute the daily steps in order and keep the daily scheduler, transcript bundle, log, and probe owned here.
 
 The judgment criteria themselves live in `<ASSISTANT_ROOT>/MEMORY/00.memory_agent.md`. This skill holds pointers and execution ordering only.
 
@@ -115,11 +114,19 @@ Execute `§升格判准`, `§项目语境快轨`, `§升格动作`, `§横向统
 
 Keep semantic off the startup path. Pool-internal operations are disclosed N-level transactions; identity/runtime graduation remains a C proposal.
 
-### 7. Add the Sunday load when applicable
+### 7. Invoke the Sunday load when applicable
 
-For a Sunday logical date, execute the kernel's weekly-only operations: `§横向统合`, both decay sections, capacity actions, project-context review, and `§毕业`.
+Judge Sunday from target logical date `D`, never from the physical execution day. A non-Sunday skips this step.
 
-When `§毕业` requires independent distillation or hook sandbox tests, spawn mutually isolated agents with only the artifact and target-format rules. Produce a proposal; never modify identity/runtime targets without C authorization.
+For Sunday, invoke:
+
+```text
+$weekly-dream --date <D> --bundle /tmp/daily-dream/<D>
+```
+
+The child must verify the date, current transcript bundle, and phase-A completion receipt. It owns weekly ledger reconciliation, weekly work archive, weekly pool metabolism, graduation proposals, and quarterly detection. It does not extract transcripts, install a schedule, write the daily probe, or commit independently.
+
+Keep its fixed return verbatim in the dream log. If it rejects or stops mid-run, record the exact reason and already-produced artifacts; do not fabricate the missing weekly outputs.
 
 ### 8. Commit as one transaction
 
@@ -127,7 +134,7 @@ Commit in this order:
 
 1. Write pool bodies and semantic evidence.
 2. Re-read touched entries and verify counts/state invariants.
-3. Finalize one compact dream log entry and send it to storage-agent.
+3. Finalize one compact dream log entry, including the verbatim weekly return or `not triggered`, and send it to storage-agent.
 4. Confirm storage-agent's write and U+FFFD check.
 5. Update `last_dream.md` to the completed logical date.
 
@@ -141,6 +148,6 @@ Report only:
 - before/after pool counts
 - created, strengthened, corrected, consolidated, decayed, awakened, or deleted entries
 - missing work-library records and C-level proposals
-- probe status and whether Sunday load ran
+- probe status and the weekly/quarterly child state
 
 Do not narrate project work or paste transcript content into the report.

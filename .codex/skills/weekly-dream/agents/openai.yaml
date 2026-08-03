@@ -1,0 +1,4 @@
+interface:
+  display_name: "Weekly Dream"
+  short_description: "Run the Sunday-only weekly branch inside daily-dream"
+  default_prompt: "Use $weekly-dream with an explicit Sunday --date and the exact daily-dream --bundle; return the fixed weekly receipt without committing independently."

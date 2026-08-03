@@ -44,7 +44,7 @@ updated: YYYY-MM-DD
 
 ## 行为模式
 
-> 跨情景稳定行为模式。由 weekly-review 从 `MEMORY/semantic_memory.md` 毕业写入。
+> 跨情景稳定行为模式。由 weekly-dream 从 `MEMORY/semantic_memory.md` 生成毕业候选，经用户 C verdict 后写入。
 > 初始 0 条。每条三段式格式：
 
 ```
@@ -71,7 +71,7 @@ updated: YYYY-MM-DD
 | 产出类型 | 主要目的地 |
 |---|---|
 | 本次工作推导过程、辩论记录 | 项目目录下 `_progress/` 推进文件 |
-| 跨周稳定的行为模式、用户偏好 schema | `MEMORY/episodic_memory.md` → 经 weekly-review 升 `semantic_memory.md` |
+| 跨周稳定的行为模式、用户偏好 schema | `MEMORY/episodic_memory.md` → 经 weekly-dream 升 `semantic_memory.md` |
 | 任何实质工作动作 | `00 专注区/_本周.md §进展记录` |
 | 跨周工作节点 | `长期记忆.md §详细周录` |
 | 项目结论、悬置点、阶段决策 | 项目主文档（不在对话中自动执行，由 daily-review 步骤 2 用户确认后写入）|

@@ -8,6 +8,21 @@ Predictive Generative Harness for Codex · **dreaming** 线的模板版本迭代
 - dreaming 与旧 PGH 5.x 模板线分流：两条线互不追溯、互不升级。旧线用户若要迁到 dreaming，按 `§-1` 重新部署。
 - 每次发布只记录公开模板结构、入口协议、初始化流程、hook / skill / assistant 骨架变化。
 
+## v6.2.1 · 夜链三层条件递归 + 低频上下文按需加载
+
+与 Claude 端 v6.2.1 对齐。`daily-dream` 继续是唯一日排程入口并持有逻辑日、转写 bundle、落账与探针；周段和季度归档成为独立 skill，仅命中条件时加载。
+
+### skills
+
+- 新增 `weekly-dream`：要求显式 `--date` 与当前 `--bundle`，并硬验 phase-A 完成收据；持有周归档、账实核对、周级池代谢与毕业候选。
+- 新增 `quarterly-archive`：自动链只可 `detect`，`execute` 还需用户当前会话 C 授权与匹配待裁项。
+- `daily-dream` 的 Sunday load 改为条件转调，并把子链固定回执并入同一趟 commit；不新增第二条 OS 排程。
+
+### 文档与边界
+
+- README、AGENTS 与架构说明同步三层条件递归；初始化仍明确自动安装每日做梦排程，weekly / quarterly 不单独安装。
+- 周段继续绑定 phase-A 闭合，避免在当日工作尚未固化时提前归档周文件。
+
 ## v6.2.0 · 排程驱动固化 + daily-dream 单链 + skill 更名去前缀 + 架构说明书
 
 与 Claude 端 v6.2.0 对齐。固化触发从「会话内道别」翻转为**操作系统排程**。旧路径依赖「道别 → 排一次性任务 → 会话恰好活到触发时刻」，这条链任一环挂掉就静默丢一天，且只能靠次日人工发现。本版把触发装进 launchd / 任务计划程序 / systemd timer，与会话生死无关。

@@ -2,7 +2,7 @@
 
 ## §-1 · 部署 / 迁移协议（首次部署专用 / 完成后 AI 自删本节）
 
-**触发条件**：用户把 PGH dreaming for Codex（v6.2.0）GitHub 链接发给 AI，并要求“帮我装到本机”或“迁移旧 PGH”。
+**触发条件**：用户把 PGH dreaming for Codex（v6.2.1）GitHub 链接发给 AI，并要求“帮我装到本机”或“迁移旧 PGH”。
 
 **迁移来源（禁止新装）**：`https://github.com/Hang-Yuan/codex-code-harness`（v5 legacy 线）只作存量取证源。用户拿那个链接来要求新装时，重定向到本仓库。
 
@@ -350,9 +350,9 @@ PGH dreaming 默认内置两个 sub-agent：
 | 项目推进过程需要记录 | 调用 `write-progress` skill |
 | 新建项目 | 调用 `create-project` skill |
 | `<ASSISTANT_ROOT>/` 下新写 `.md` 文件 | 调用 `new-file` skill |
-| 用户触发复盘 / 目标逻辑日为周日的排程运行 | 调用 `daily-dream` skill（周段随之触发）|
+| 用户触发复盘 / 排程运行 / 缺梦补扫 | 调用 `daily-dream`；目标日为周日时由其转调 `weekly-dream`，季度点再转 `quarterly-archive detect` |
 | 用户要求本轮总结 / 交接 | 调用 `daily-dream` skill |
-| 排程定时记忆回放（日界线 + 30 分钟）/ 缺梦补扫 / 周日记忆载荷 | 调用 `daily-dream` skill |
+| 用户当前会话批准季度归档 | 调用 `quarterly-archive --mode execute --date <已检测周日>`；匹配待裁项与当前授权缺一不可 |
 | 当前处境过时 | 提出更新判断；获[用户称呼]确认后覆盖 `长期记忆.md §当前处境`，N/C 按内容判定 |
 | 跨周工作节点 | 追加 `长期记忆.md §详细周录`，N 级 |
 | 架构 / skill / hook / 协议变更 | 追加 ITERATION_LOG，即时版本化 |
@@ -410,8 +410,8 @@ PGH dreaming 默认内置两个 sub-agent：
 |---|---|
 | 启动序列文件读取失败 | 告知路径，确认重建或跳过 |
 | 记忆写入与权威源冲突 | 停止，呈现冲突，等裁决 |
-| 专注区文件未纳入 `_本周.md` | daily-dream 周段账实核对处理；遗漏 N 级告知 |
-| semantic 持续满载不降 | daily-dream 周段容量强制清理；持续则提阈值调参 |
+| 专注区文件未纳入 `_本周.md` | `weekly-dream` 账实核对处理；遗漏 N 级告知 |
+| semantic 持续满载不降 | `weekly-dream` 容量强制清理；持续则提阈值调参 |
 | skill 未发现 | 检查 `<CODEX_HOME>/skills/` 下对应目录 |
 | hook 报错 | 告知用户检查 `config.toml` |
 | 疑似智能异常 | [用户称呼]判定“不是[AI 名字]”/“停，感觉不对” → 当前会话停所有写入，转只读，等授权 |

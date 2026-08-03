@@ -154,7 +154,7 @@ python3 scripts/install_schedule.py \
 
 三个平台各用原生调度器：macOS launchd（`~/Library/LaunchAgents/`）、Windows 任务计划程序（建完立刻改电源三项设置）、Linux systemd user timer（带 `Persistent=true`，关机错过的触发开机补跑）。
 
-**weekly 不需要单独装**。周段是 daily-dream 的周日分支——日排程装好，周级载荷自动在周日那趟追加。
+**weekly / quarterly 不需要单独装**。日排程只启动 `daily-dream`；目标日为周日时它条件转调 `weekly-dream`，季度点再转 `quarterly-archive detect`。execute 永远等待用户当前会话授权。
 
 ---
 

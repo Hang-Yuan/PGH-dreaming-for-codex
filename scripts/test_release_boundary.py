@@ -1493,6 +1493,63 @@ class ScopeResolutionTest(unittest.TestCase):
                             "smoke 文档集合是空的")
 
 
+class ConditionalDreamLayeringTest(unittest.TestCase):
+    """现役包必须发布日 / 周 / 季三层条件递归，且保留硬依赖与授权闸。"""
+
+    @staticmethod
+    def skill_paths(repo: str) -> tuple[Path, Path, Path]:
+        runtime = CURRENT[repo]["runtime"]
+        base = repo_root(repo) / (".claude/skills" if runtime == "claude"
+                                  else ".codex/skills")
+        return (base / "daily-dream/SKILL.md",
+                base / "weekly-dream/SKILL.md",
+                base / "quarterly-archive/SKILL.md")
+
+    def test_three_skill_layers_ship(self):
+        for repo in CURRENT:
+            for path in self.skill_paths(repo):
+                self.assertTrue(path.is_file(),
+                                f"{repo} 缺少条件夜链 skill：{path}")
+
+    def test_daily_hands_one_explicit_transaction_to_weekly(self):
+        for repo in CURRENT:
+            daily, _, _ = self.skill_paths(repo)
+            body = daily.read_text(encoding="utf-8")
+            self.assertIn("weekly-dream", body, f"{repo} 日链没有转调周链")
+            self.assertIn("--date", body, f"{repo} 日链没有显式传目标日")
+            if CURRENT[repo]["runtime"] == "codex":
+                self.assertIn("--bundle", body,
+                              f"{repo} 有实体转写 bundle 却没有交给周链")
+            else:
+                self.assertIn("phase_a_receipt.json", body,
+                              f"{repo} 没有把父事务的 phase-A 收据纳入交接")
+
+    def test_weekly_keeps_phase_a_guard_and_detect_only_quarter_handoff(self):
+        for repo in CURRENT:
+            _, weekly, _ = self.skill_paths(repo)
+            body = weekly.read_text(encoding="utf-8")
+            lowered = body.lower()
+            self.assertTrue("phase_a_receipt.json" in lowered or
+                            "phase-a completion receipt" in lowered,
+                            f"{repo} 周链丢失 phase A 硬依赖")
+            self.assertIn("quarterly-archive", body,
+                          f"{repo} 周链没有季度点转调")
+            self.assertIn("--mode detect", body,
+                          f"{repo} 周链可能绕过季度 detect 模式")
+
+    def test_quarter_execute_requires_current_human_authorization(self):
+        for repo in CURRENT:
+            _, _, quarterly = self.skill_paths(repo)
+            body = quarterly.read_text(encoding="utf-8").lower()
+            self.assertIn("detect", body, f"{repo} 季链缺 detect 模式")
+            self.assertIn("execute", body, f"{repo} 季链缺 execute 模式")
+            self.assertTrue("当前真人会话" in body or
+                            "current human session" in body,
+                            f"{repo} execute 没有当前真人会话授权闸")
+            self.assertTrue("c 级" in body or "c-level" in body,
+                            f"{repo} 季度归档没有标成 C 级动作")
+
+
 def load_tests(loader, tests, pattern):
     """按作用域装配套件：作用域外的类**不注册**，而不是注册后逐条跳过。
 
@@ -1505,7 +1562,8 @@ def load_tests(loader, tests, pattern):
                 ArchitectureBookTest, WholeRepoSanitizationTest,
                 InterviewContractTest, ExtractorTimezoneTest,
                 CatchUpContractTest, BoundaryConfirmationTest,
-                ScheduledAtSchemaTest, ScopeResolutionTest):
+                ScheduledAtSchemaTest, ScopeResolutionTest,
+                ConditionalDreamLayeringTest):
         need = getattr(cls, "REQUIRES_REPO", None)
         if need and need not in CURRENT and need not in LEGACY:
             continue
@@ -1514,7 +1572,8 @@ def load_tests(loader, tests, pattern):
                    VersionAuthorityTest, ArchitectureBookTest,
                    InterviewContractTest, CatchUpContractTest,
                    BoundaryConfirmationTest,
-                   ScheduledAtSchemaTest) and not CURRENT:
+                   ScheduledAtSchemaTest,
+                   ConditionalDreamLayeringTest) and not CURRENT:
             continue
         if cls is LegacyReposTest and not LEGACY:
             continue

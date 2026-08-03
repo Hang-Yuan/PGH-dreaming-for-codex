@@ -11,7 +11,7 @@ updated: 2026-06-11
 
 ## 加载链（上下游）
 
-**上游**：`AGENTS.md §M · 记忆系统` — close-node / daily-review / weekly-review 需要维护情景记忆候选时读取。
+**上游**：`AGENTS.md §M · 记忆系统` — close-node / daily-dream / weekly-dream 需要维护情景记忆候选时读取。
 
 **管辖文件（下游）：**
 - `semantic_memory.md` — 候选达到语义层条件后升格。

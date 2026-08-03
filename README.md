@@ -1,12 +1,12 @@
 # Predictive Generative Harness for Codex · dreaming
 
-PGH **dreaming for Codex**（6.1）是一套给 Codex CLI 使用的个人长期协作骨架。它把"用户档案 / AI persona / 长期记忆 / 周工作台 / 项目区 / 记忆代谢 / hooks / skills"做成一套可部署的 Markdown 文件结构，让 Codex 在每次会话启动时自动加载、按规则写入、跨会话保持上下文。
+PGH **dreaming for Codex**（6.2）是一套给 Codex CLI 使用的个人长期协作骨架。它把"用户档案 / AI persona / 长期记忆 / 周工作台 / 项目区 / 记忆代谢 / hooks / skills"做成一套可部署的 Markdown 文件结构，让 Codex 在每次会话启动时自动加载、按规则写入、跨会话保持上下文。
 
 **dreaming 这一代的核心变化**：记忆代谢从"每条消息实时判断写入"翻转为**白天零写入、夜间集中代谢**——白天对话只把工作结论固化进工作库，全部校准信号以原文留在会话转写里；夜间由 `daily-dream` 流程无人值守回放当天转写，统一做提取、升格、衰减。实时写入层（旧版的 `memory_signal` hook + `episodic_inbox` 收件箱）整层退役。
 
 **与 Codex 默认行为的差别**：默认情况下 Codex 是无状态的；PGH 把长期上下文外置成结构化文件，让 Codex 启动时沿加载链读取，逐消息通过 hook 获得提醒，再由 skill 把值得保留的信息分类写回本地知识库。
 
-> 当前发布：v6.2.0 · 排程驱动固化 + daily-dream 单链 + skill 更名去前缀 + 架构说明书。`CHANGELOG.md` 记录模板发布，README 展示当前可部署入口。
+> 当前发布：v6.2.1 · 夜链三层条件递归 + 周段/季度上下文按需加载。`CHANGELOG.md` 记录模板发布，README 展示当前可部署入口。
 > dreaming 重点：白天零写入 / 零注入、夜间 `daily-dream` 无人值守代谢、L0 = 会话转写、episodic 四态（活动 / 复审 / 候补 / 休眠）、semantic 退注入降为 dream 中间工作区、记忆规则单一权威源、storage-agent 文件 IO、按部署期作息定的动态日界线 + 排程无头代谢。
 > 本仓库是 PGH **dreaming 线**的 Codex 端起点，与 Claude 端 [PGH-dreaming](https://github.com/Hang-Yuan/PGH-dreaming) 平行；两端共享同一套记忆代谢理念，各自适配自己的 runtime。
 > 架构说明书见 [docs/architecture/README.md](./docs/architecture/README.md)——第一次接触这套系统从那里起读。
@@ -27,7 +27,7 @@ PGH dreaming 的文件分三类，**部署 / 阅读 / 写入** 角色不同：
 | `.codex/AGENTS.md` | 全局指令主控（启动序列 / 系统原则 / 行为规则 / 记忆系统 / 故障恢复）| AI 启动必读，不写 |
 | `.codex/config.toml` | hooks 配置 | AI 启动读取，不写 |
 | `.codex/hooks/*.py` | 逐消息 hook（时间感知 / 思考协议 / 节点收尾 / 会话结束）| AI 触发，不写 |
-| `.codex/skills/*/SKILL.md` | 工作流（daily-dream / close-node / write-progress / create-project / new-file / week-sync）| AI 按情境调用，不写 |
+| `.codex/skills/*/SKILL.md` | 工作流（daily-dream / weekly-dream / quarterly-archive / close-node / write-progress / create-project / new-file / week-sync）| AI 按情境调用，不写 |
 | `.codex/agents/*.toml` | sub-agent 定义（通用检索 / 文件 IO 等）| AI 调用，不写 |
 | `assistant/00 专注区/00.专注区_agent.md` | 专注区规则 agent | AI 按需读，不写 |
 | `assistant/01 项目区/00.项目区_agent.md` | 项目区规则 agent | AI 按需读，不写 |
@@ -67,12 +67,12 @@ PGH dreaming 的文件分三类，**部署 / 阅读 / 写入** 角色不同：
 把以下指令发给 Codex：
 
 ```text
-这是 PGH dreaming for Codex（release v6.2.0）链接 https://github.com/Hang-Yuan/PGH-dreaming-for-codex ，帮我装到本机。如果我已经有旧 PGH 系统，把我已有的内容迁移过来。
+这是 PGH dreaming for Codex（release v6.2.1）链接 https://github.com/Hang-Yuan/PGH-dreaming-for-codex ，帮我装到本机。如果我已经有旧 PGH 系统，把我已有的内容迁移过来。
 ```
 
 AI 会按 `.codex/AGENTS.md §-1 部署 / 迁移协议` 自己完成：
 
-1. 拉取或下载当前 PGH 仓库（release v6.2.0）到临时目录
+1. 拉取或下载当前 PGH 仓库（release v6.2.1）到临时目录
 2. 复制骨架文件到 `<CODEX_HOME>`（通常是 `~/.codex`），复制用户内容空模板到指定的 `<ASSISTANT_ROOT>/`
 3. **把 `scripts/` 与 `docs/` 复制到持久位置**，并由安装器把排程要长期调用的脚本落到 `~/.pgh/scripts/`
 4. 替换占位符（assistant 路径 / Codex 配置目录路径 / Python 命令等）
@@ -162,7 +162,8 @@ PGH dreaming 使用"一个只读源 + 两个记忆池"的三层骨架，按白�
 
 - **白天**：零记忆写入。工作结论经 close-node 固化进工作库（项目主文档 / progress / `_本周`）；校准信号以原文留在 L0 转写里。
 - **夜间（daily-dream）**：由 OS 排程在**日界线 + 30 分钟**（部署期作息访谈决定，不是固定值）拉全新无头进程自动跑——无人值守回放刚闭合那个逻辑日的全量转写，升星、≥2 独立事件升格、单事件入候补、项目语境快轨升 semantic、全部操作写 MEMORY_LOG 留账。
-- **周日**：日级之上加周级载荷——升格候选裁决、横向统合、衰减执行、毕业候选生成、周归档。
+- **周日**：`daily-dream` 条件转调独立 `weekly-dream`，执行升格候选裁决、横向统合、衰减、毕业候选和周归档；仍共用一份日排程。
+- **季度点**：`weekly-dream` 再转调 `quarterly-archive detect`；detect 只清点挂待裁，execute 要求用户当前会话明确授权。低频指令只在命中条件时进入上下文。
 
 `MEMORY_LOG.md` 只记录记忆系统代谢；项目结论写项目主文档；当前处境写 `长期记忆.md`。
 

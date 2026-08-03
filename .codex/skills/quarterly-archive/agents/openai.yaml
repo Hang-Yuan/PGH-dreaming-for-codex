@@ -1,0 +1,4 @@
+interface:
+  display_name: "Quarterly Archive"
+  short_description: "Detect quarter points; execute only with current C approval"
+  default_prompt: "Use $quarterly-archive with explicit --mode and --date; never upgrade detect to execute or archive without the user's current authorization."
