@@ -1,17 +1,17 @@
-# PGH dreaming for Codex — 运行时配置模板
+# Codex 版 PGH 梦境系统——运行时配置模板
 #
 # 部署时由 AI 按 §-1 部署协议替换占位符：
 # - <CODEX_HOME>：Codex 配置目录，通常是 ~/.codex
-# - <ASSISTANT_ROOT>：assistant 知识库根目录
+# - <WORKSPACE_ROOT>：工作空间根目录
 #
-# 本文件只提供 PGH 运行所需的最小配置（模型硬锁 + hooks）。
-# 用户自己的 marketplaces / plugins / mcp_servers / desktop / projects 等
-# 本地设置不属于模板，部署时保留用户既有 config，只并入下面的 [features] 与 [[hooks.*]] 段。
+# 本文件只提供 PGH 运行所需的最小配置（模型硬锁 + 钩子）。
+# 用户自己的市场、插件、MCP 服务器、桌面端、项目等本地设置不属于模板；
+# 部署时保留用户既有配置，只并入下面的 `[features]` 与 `[[hooks.*]]` 段。
 
 model = "gpt-5.6-terra"
 model_reasoning_effort = "ultra"
 
-# Subagent 并发与递归约束
+# 子代理并发与递归约束
 [agents]
 max_threads = 4
 max_depth = 1
@@ -19,16 +19,16 @@ max_depth = 1
 [features]
 hooks = true
 
-# --- PGH active hooks ---
-# 现役恰好三项，白名单管理——`hooks/` 里出现未注册的脚本即算漂移：
+# --- PGH 现役钩子 ---
+# 现役恰好三项，白名单管理——`hooks/` 中出现未注册脚本即算漂移：
 #   timesense.py         逐消息注入真实当前时间
 #   thinking_protocol.py 逐消息注入思考协议
-#   session_start.py     compact 后重新注入身份层（读 persona SOUL + USER）
+#   session_start.py     压缩上下文后重新注入身份层（读取人格 SOUL 与 USER）
 #
-# **没有告别 hook。** 道别不触发固化：当日工作在会话转写里过夜（转写就是 L0 原始源），
-# 由 OS 排程在**日界线 + 30 分钟**跑 daily-dream 处理刚闭窗的那个逻辑日。日界线由部署期
+# **没有告别钩子。** 道别不触发固化：当日工作在会话转写里过夜（转写就是 L0 原始源），
+# 由 Codex 原生自动化任务在**日界线 + 30 分钟**运行 `daily-dream`，处理刚闭窗的逻辑日。日界线由部署期
 # 作息访谈决定（02:00-06:00 任一整点），不是固定值——见 AGENTS.md §时间感知。
-# 已退役的 session_end.py / session_context_check.py 见 hooks/_retired_20260801/。
+# 已退役的 `session_end.py` / `session_context_check.py` 见 `hooks/_retired_20260801/`。
 
 [[hooks.SessionStart]]
 matcher = "compact"

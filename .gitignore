@@ -33,8 +33,8 @@ transcription-history.jsonl
 hook_invocations.log
 
 # === 用户私有运行内容（部署后本地生成，模板仓库不含）===
-assistant/**/_local/
-assistant/**/.obsidian/
+workspace/**/_local/
+workspace/**/.obsidian/
 
 # === 本地安全备份，只保留在发布者机器上 ===
 .pre-mass-fix-backup-*/

@@ -1,4 +1,4 @@
 interface:
-  display_name: "Nightly memory dream"
-  short_description: "Replay [AI 名字] session transcripts and execute daily & Sunday memory metabolism with coverage verification"
-  default_prompt: "Use $daily-dream to replay today’s [AI 名字] sessions and run controlled memory metabolism."
+  display_name: "每日做梦"
+  short_description: "固化已闭合逻辑日的工作，核验回放覆盖并执行受控记忆代谢"
+  default_prompt: "使用 $daily-dream 处理最近一个已经闭合的逻辑日；严格执行事务闸，并报告提交收据。"

@@ -1,153 +1,207 @@
 ---
 name: daily-dream
-description: Daily work consolidation plus memory metabolism as one chain. Invoked automatically with no arguments by the OS schedule after the day boundary; also on "run daily-dream", "backfill YYYY-MM-DD", "the dream missed a day", or when week-sync reports a gap and the user says to backfill. **Not** invoked on goodbyes ("that's it for today", "good night") — parting does not consolidate; the day's work is handled by the next morning's scheduled run.
+description: 把每日工作固化与记忆代谢串成一条事务链。用于逻辑日边界后的单一 Codex 原生每日自动化任务、明确的每日做梦请求、指定日期补跑，或周同步报告缺口时。不要在告别时调用；下一次原生自动化任务会处理已经闭合的逻辑日。
 ---
 
-# Daily Dream
+# 每日做梦（`daily-dream`）
 
-One chain, two phases: **phase A work consolidation** (work library) → **phase B memory metabolism** (memory pools). When the target logical date is Sunday, Step 7 conditionally invokes the independent `weekly-dream`; only that skill may invoke `quarterly-archive detect`. Execute the daily steps in order and keep the daily scheduler, transcript bundle, log, and probe owned here.
+一条链包含两个阶段：**A 段工作固化**（工作库）→ **B 段记忆代谢**（记忆池）。目标逻辑日为周日时，第 9 步按条件调用独立的周级做梦（`weekly-dream`）；只有该技能可以调用季度归档检测（`quarterly-archive detect`）。按 1→10 顺序执行，不得跳步、不得降级为“如需可补”；每日排程、转写包、日志和完成探针均由本技能管辖。
 
-The judgment criteria themselves live in `<ASSISTANT_ROOT>/MEMORY/00.memory_agent.md`. This skill holds pointers and execution ordering only.
+判断标准的权威正文位于 `<WORKSPACE_ROOT>/MEMORY/00.memory_agent.md`。本技能只保存指针和执行顺序。
 
-## Boundaries
+## 边界
 
-- Read the rule kernel first: `<ASSISTANT_ROOT>/MEMORY/00.memory_agent.md`.
-- Treat Codex JSONL transcripts as external, read-only L0. Never edit or relocate them.
-- Replay only sessions whose effective `thread_source` is `user`. Exclude `subagent` and `automation` sessions.
-- Do not reconstruct project history inside memory files. Project facts stay in project files, `_本周.md`, or LTM.
-- Do not read or write `MEMORY_LOG.md` or `ITERATION_LOG.md` directly. Send exact finalized text to storage-agent.
-- Only USER, SOUL, AGENTS protocol structure, skills, hooks, and whole-file deletion require C-level authorization. Pool-internal operations are N-level and must be disclosed in the dream log.
-- Daytime continuous writes are disabled. `close-node` is the sole in-presence exception and may write L1 only when a node is explicitly closed and at least two independent events support the schema.
+- 首先读取规则内核：`<WORKSPACE_ROOT>/MEMORY/00.memory_agent.md`。
+- 把 Codex JSONL 转写视为外部只读 L0；不得编辑或移动。
+- 只回放来源字段为用户的会话（`thread_source=user`）；排除子代理来源（`thread_source=subagent`）和自动化任务来源（`thread_source=automation`）。
+- 不在记忆文件中重建项目历史。项目事实留在项目文件、`_current.md` 或长期记忆中。
+- 不直接读写 `MEMORY_LOG.md` 或 `ITERATION_LOG.md`。把定稿后的精确文本交给 `storage-agent`。
+- 只有 USER、SOUL、AGENTS 协议结构、技能、钩子和整份文件删除需要 C 级授权。池内操作属于 N 级，并必须在梦日志中披露。
+- 白天连续写池已停用。`close-node` 是唯一在场例外；只有节点明确闭合且至少有两个独立事件支持该模式时，才可写入 L1。
+- **两段事务隔离**：A 段落盘即闭环，B 段失败不回滚 A 段；已固化的工作不因代谢失败作废。
+- **A 段不碰记忆池、不写 `MEMORY_LOG.md`**；**B 段不写工作库**——只校验漏账并如实报告，不越界替 A 段补写。
 
-## Inputs and outputs
+## 输入与输出
 
-Inputs:
+输入：
 
 - `<CODEX_HOME>/sessions/**/*.jsonl`
 - `<CODEX_HOME>/archived_sessions/*.jsonl`
-- USER, [AI 名字] SOUL, and `AGENTS.md §R` identity-layer context loaded at startup; pool files are not startup-loaded and must be read in full at Step 3
-- `_本周.md` and project progress only when checking whether an event was already fixed in the work library
+- 启动时已经加载的 USER、[AI 名字] SOUL 和 `AGENTS.md §R · 行为规则` 身份层上下文；记忆池不在启动时加载，必须在第 5 步全文读取
+- `<WORKSPACE_ROOT>/MEMORY/phase_a_receipt.json`（存在时）：A 段幂等键，第 3 步读
+- 项目主文档、`_progress/`、`_current.md` 与长期记忆：A 段读它们判已固化范围并写回结论；B 段只读不写
 
-Outputs:
+输出：
 
-- Updated [AI 名字] `episodic_memory.md` and `semantic_memory.md`
-- Evidence additions to `_archive/semantic_archive.md` when semantic changes occur
-- A single dream summary appended to `MEMORY_LOG.md` by storage-agent
-- `<ASSISTANT_ROOT>/MEMORY/last_dream.md` updated only after the entire transaction succeeds
+- A 段：当日工作结论按内容类型固化进工作库，收尾写 `<WORKSPACE_ROOT>/MEMORY/phase_a_receipt.json`
+- 更新后的 [AI 名字] `episodic_memory.md` 和 `semantic_memory.md`
+- 语义记忆发生变化时，向 `_archive/semantic_archive.md` 追加证据
+- 由 `storage-agent` 向 `MEMORY_LOG.md` 追加一条梦摘要
+- 事务闭合时写 `<WORKSPACE_ROOT>/MEMORY/dream_receipts/YYYY-MM-DD.json` 为 `COMMITTED`
+- 只有整项事务成功后才更新 `<WORKSPACE_ROOT>/MEMORY/last_dream.md`
 
-## Workflow
+## 工作流
 
-### 1. Resolve the logical date and coverage
+### 1. 解析逻辑日期与覆盖窗口
 
-Read the boundary hour from `00.memory_agent.md §逻辑日期` (mirrored in `AGENTS.md §时间感知`). **It is a deployment-specific value, not a constant**: `install_schedule.py` writes any whole hour in 02:00–06:00 from the deployer's sleep/wake answers. Before that hour, the logical date is the previous physical date.
+从 `00.memory_agent.md §逻辑日期` 读取边界小时；`AGENTS.md §时间感知` 中有同一镜像。该值在 Codex 初始化访谈时写入，并随部署实例固定。物理时间早于边界小时，逻辑日期取前一个物理日。
 
-Logical date `D` covers physical time `[D boundary, D+1 boundary)`. A production dream must not run before that window closes; the scheduled run fires at **boundary + 30 minutes**.
+逻辑日 `D` 覆盖物理时间 `[D 的边界时刻, D+1 的边界时刻)`。生产梦不得在该窗口闭合前运行；计划任务在**边界后 30 分钟**触发。
 
-At the scheduled run, `target D = logical date at fire time - 1 day` — the just-closed window. Never process the current logical date whose transcript window is still open.
+计划任务触发时，`目标 D = 触发时的逻辑日期 - 1 天`，即刚刚闭合的窗口。不得处理转写窗口仍开放的当前逻辑日。
 
-Do not hardcode 06:00 or 06:10 anywhere in this chain. For a deployer with a 03:00 boundary, work done at 04:00 already belongs to the new day; computing with 06:00 files it under the previous one and every consolidated entry lands on the wrong date, with nothing to raise an error.
+不得在链中写死 06:00 或 06:10。若部署者把边界设为 03:00，04:00 完成的工作已经属于新的一天；按 06:00 计算会将所有固化条目错记到前一天，而且不会自然报错。
 
-Read `last_dream.md` if present:
+如存在 `last_dream.md`，先读取：
 
-- Probe already at or beyond the requested date: return a no-op unless [用户称呼] explicitly requests a force audit; never double-count the date.
-- Normal scheduled run: process the most recent completed logical date only.
-- Missed dream: backfill at most the latest three effective workdays, oldest first.
-- A date with no substantive user session is a valid zero-input dream; record it without inventing signals.
+- 探针日期已经达到或超过请求日期：返回无操作；只有 [用户称呼] 明确要求强制审计时才能重跑，且不得重复计数。
+- 正常计划触发：只处理最近一个已经闭合的逻辑日。
+- 漏梦：最多补跑最近三个有效工作日，按日期从旧到新处理。
+- 某日没有实质用户会话，也是一场合法的零输入梦；如实记账，不得捏造信号。
 
-Never advance `last_dream.md` past an earlier failed date.
+前一个日期失败时，不得把 `last_dream.md` 推进到更晚日期。
 
-### 2. Extract the complete user-session bundle
+### 2. 抽取完整的用户会话包
 
-Run:
+运行：
 
 ```bash
 <PYTHON_BIN> <CODEX_HOME>/skills/daily-dream/scripts/extract_daily_transcripts.py \
   --date YYYY-MM-DD
 ```
 
-The script writes a transient bundle under `/tmp/daily-dream/YYYY-MM-DD/` and prints a JSON summary. Inspect `manifest.json` before reading `transcript.md`.
+脚本在 `/tmp/daily-dream/YYYY-MM-DD/` 下写入临时包，并输出 JSON 摘要。读取 `transcript.md` 前先检查 `manifest.json`。
 
-Hard checks:
+硬检查：
 
-- `errors` must be empty, or every error must be explained before continuing.
-- No included source may have `thread_source=subagent` or `thread_source=automation`.
-- Runtime scaffolding (`recommended_plugins`, injected AGENTS text, environment context, subagent notifications, Codex internal continuation context, and turn-aborted frames) must not appear as user evidence.
-- A turn whose user side contains only internal control frames must be absent in full, including its assistant continuation output.
-- The manifest window must be `<boundary>:00 -> next-day <boundary>:00`, not the natural calendar day. `extract_daily_transcripts.py` resolves `<boundary>` itself (schedule receipt first, then the installed authority text) and prints which source it used; pass `--boundary-hour` only to override. **Never write 06:00 into this window** — it is deployment-specific, and a wrong value silently shifts the whole extraction window.
-- **Do not pass `--timezone` either.** The script resolves the IANA zone from the schedule receipt (top-level field first, then the legacy `acceptance` nesting for machines installed before that field existed) and prints the source it used. Passing a zone explicitly overrides the receipt, so a hardcoded `Asia/Shanghai` in this command would move the whole window for every deployer outside that zone — and the manifest's dates, counts, and paths all stay self-consistent, so the shift is invisible in the output. Check the two stderr provenance lines (`boundary hour = …`, `timezone = …`) against the deployment; a `**兜底**` marker on either one means the receipt was unreadable and the window may be wrong.
-- Read all of `transcript.md` in chunks. Do not substitute recent context, the final turn, `_本周.md`, or a compact summary for the transcript bundle.
-- **强制真读硬约束**：必须真读 `transcript.md` 全文，**严禁用 compact 上下文 / 当前会话记忆 / `_本周.md` 摘要顶替 L0 真读**。在场时段也不例外——dream 是离线代谢，输入只能是转写，不能是"记得今天干了什么"。
+- `errors` 必须为空；如不为空，继续前必须逐项解释。
+- 任何纳入的来源都不得带有 `thread_source=subagent` 或 `thread_source=automation`。
+- 运行时脚手架（`recommended_plugins`、注入的 AGENTS 文本、环境上下文、子代理通知、Codex 内部续写上下文及回合中止帧）不得作为用户证据出现。
+- 如果某回合的用户侧只包含内部控制帧，必须整回合排除，其中也包括后续的助手输出。
+- 清单窗口必须是 `<边界>:00 → 次日 <边界>:00`，不得按自然日截取。`extract_daily_transcripts.py` 从已安装的权威文本解析 `<边界>` 并输出来源；仅在明确恢复操作中才可传入 `--boundary-hour` 覆盖。
+- 正常运行不得传入 `--timezone`。脚本从 `AGENTS.md §时间感知` 解析 IANA 时区并输出来源。出现回退标记，说明初始化未完成或权威行不可读；停止回放，避免使用错位窗口。
+- 分块阅读全文 `transcript.md`。不得用近期上下文、最后一个回合、`_current.md` 或压缩摘要代替转写包。
+- **强制真读硬约束**：必须真读 `transcript.md` 全文，**严禁用压缩上下文、当前会话记忆或 `_current.md` 摘要顶替 L0 真读**。即使用户在场也不例外；梦属于离线代谢，其输入只能是转写，不能依靠“记得今天做过什么”。
 
-### 3. Load the comparison baseline
+## A 段 · 工作固化
 
-Read both pool files in full before judging new signals:
+### 3. 判断 A 段幂等
 
-- `episodic_memory.md`: candidate, active, review, and dormant intermediate schema
-- `semantic_memory.md`: non-injected active semantic schema and promotion candidates
+**判据 = A 段自己的收据**：`<WORKSPACE_ROOT>/MEMORY/phase_a_receipt.json` 存在，且其 `logical_date` 等于目标逻辑日。
 
-Compare against the already-loaded USER, [AI 名字] SOUL, and AGENTS §R identity layer. The subtraction baseline is mandatory: without it, a hit cannot be distinguished from a new schema.
+- 命中：A 段已固化，跳到第 5 步。
+- 不命中（文件缺失、日期不符或无法解析）：正常执行第 4 步。
 
-Count pool states and apply `§两池容量阈值`. Report counts even if there are no changes.
+不得用 `_current.md` 当日段是否存在代替本判据。`close-node` 写同一个地面状态，当天闭过任一节点就会让整段 A 段被判为已固化而跳过，剩余当日工作永久漏固化；一天多节点是常态，不是边缘情况。幂等键必须是本流程自己拥有的收据，不得借用其他流程也会写的共享地面状态。
 
-### 4. Replay and classify every substantive exchange
+### 4. 逐类落位写入工作库
 
-Walk the bundle chronologically. For each candidate observation:
+以第 2 步的转写包为唯一依据，把目标逻辑日全部工作结论按内容类型固化：
 
-1. Separate event direction from schema direction.
-2. Check whether the event direction is already fixed in the work library. Report a missing work record; do not silently write shared history from the dream.
-3. Apply identity-layer filtering.
-4. Apply P/C axes against the schema that existed at that point.
-5. Drop `P=hit + C=neutral` and ordinary identity-layer confirmations.
-6. Preserve explicit confirmations of intermediate episodic/semantic schema as strengthening evidence.
+| 内容类型 | 落点 |
+|---|---|
+| 节点结论 | 项目主文档**本体** |
+| 推导过程与辩论记录 | `_progress/` |
+| 跨周节点与当前处境变化 | `<WORKSPACE_ROOT>/Long_Term_Memory/status.md` |
+| 实质工作产出流水 | `<WORKSPACE_ROOT>/00 Focus Zone/_current.md §进展记录`（结论只放指向主文档的指针，不重复结论本体） |
 
-Keep raw evidence anchors as logical date + session id + turn id. Do not store whole chat passages in pool files.
+**关键区分**：`_progress/` 是过程附件，`_current.md` 是流水进展，二者都**不能替代**主文档结论更新——结论必须写回项目主文档本体。
 
-### 5. Apply episodic operations
+**全量固化，不做补漏式协同**：不查 `close-node` 当天固化过哪些。目标逻辑日所有结论一律全量过一遍；发现某条已被 `close-node` 固化过则该条跳过，其余照写。判定粒度是候选条目，不是整个目标逻辑日。
 
-Execute the kernel's `§episodic 状态机`, `§生成`, `§L0→L1 升格抽象红线`, `§升星`, and `§episodic 衰减` exactly. These headings are the single authority for state names, evidence thresholds, daily operations, and Sunday-only operations; do not reconstruct them from this skill.
+**架构与协议变更例外**：目标逻辑日若发生架构、技能或协议变更且尚未记录，定稿 `ITERATION_LOG.md` 条目并交 `storage-agent` 落盘，**不进 B 段**；变更日志归 `ITERATION_LOG.md`，记忆代谢不碰它。
 
-Record every create/strengthen/correct/wake/delete decision with evidence anchors before touching the file. Apply all accepted operations as one pool transaction.
+**覆盖纪律**：新结论推翻旧结论时覆盖主文档结论节，留覆盖记录。现役文档只记当前有效内容——不留旧结论作对照，历史判断进 `ITERATION_LOG.md`。
 
-### 6. Apply semantic operations
+**收尾动作（本步最后做）**：写 `<WORKSPACE_ROOT>/MEMORY/phase_a_receipt.json`，含 `logical_date`、持有者、写入的落点清单与覆盖记录。
 
-Execute `§升格判准`, `§项目语境快轨`, `§升格动作`, `§横向统合`, and `§semantic 衰减` from the kernel. The kernel alone defines daily exceptions, the Sunday gate, capacity behavior, and project-context handling.
+**必须最后写**：写早了会让中途失败的一趟在次日被判为已固化而整段跳过。
 
-Keep semantic off the startup path. Pool-internal operations are disclosed N-level transactions; identity/runtime graduation remains a C proposal.
+## B 段 · 记忆代谢
 
-### 7. Invoke the Sunday load when applicable
+### 5. 加载比较基线
 
-Judge Sunday from target logical date `D`, never from the physical execution day. A non-Sunday skips this step.
+判断新信号前，必须全文读取两个记忆池：
 
-For Sunday, invoke:
+- `episodic_memory.md`：候补、活动、复审和休眠状态的中间模式
+- `semantic_memory.md`：不注入启动链的活跃语义模式和毕业候选
+
+将它们与已经加载的 USER、[AI 名字] SOUL 和 `AGENTS.md §R · 行为规则` 身份层比较。减法基线不可省略；没有基线，就无法区分一次命中和一个新模式。
+
+统计各池状态并应用 `00.memory_agent.md §两池容量阈值`。即使没有变化，也必须报告计数。
+
+### 6. 回放并分类每一段实质交互
+
+按时间顺序遍历会话包。对每个候选观察：
+
+1. 分开判断事件方向和模式方向。
+2. 检查事件方向是否已经由 A 段或 `close-node` 固化在工作库中。缺少工作记录时如实报告并记入梦日志；**漏账只报不补写**，不得从 B 段静默写入共享历史。
+3. 应用身份层过滤。
+4. 以该时点已经存在的模式为基线，应用 P/C 两轴。
+5. 丢弃 `P=命中 + C=中性` 以及普通身份层确认。
+6. 中间情景/语义模式得到明确确认时，保留为增强证据。
+
+原始证据锚点使用“逻辑日期 + 会话 ID + 回合 ID”。不得把整段对话原文存进记忆池。
+
+### 7. 执行情景记忆操作
+
+严格执行 `00.memory_agent.md §情景记忆状态机`、`00.memory_agent.md §生成`、`00.memory_agent.md §L0→L1 升格抽象红线`、`00.memory_agent.md §升星` 和 `00.memory_agent.md §情景记忆衰减`。这些章节是状态名、证据阈值、每日操作和仅周日操作的唯一权威；不得从本技能反向重建规则。
+
+触碰文件前，先记录每一个新建、增强、校正、唤醒或删除决定及其证据锚点。所有接受的操作作为一笔记忆池事务统一应用。
+
+### 8. 执行语义记忆操作
+
+执行 `00.memory_agent.md §升格判准`、`00.memory_agent.md §项目语境快轨`、`00.memory_agent.md §升格动作`、`00.memory_agent.md §横向统合` 和 `00.memory_agent.md §语义记忆衰减`。日常例外、周日闸、容量行为和项目语境处理只以内核为准。
+
+语义记忆不得进入启动路径。池内操作属于须披露的 N 级事务；身份层或运行时毕业仍须提交 C 级提案。
+
+### 9. 在适用时调用周日分支
+
+按目标逻辑日 `D` 判断是否为周日，不看执行当天的物理日期。非周日跳过本步。
+
+周日调用：
 
 ```text
 $weekly-dream --date <D> --bundle /tmp/daily-dream/<D>
 ```
 
-The child must verify the date, current transcript bundle, and phase-A completion receipt. It owns weekly ledger reconciliation, weekly work archive, weekly pool metabolism, graduation proposals, and quarterly detection. It does not extract transcripts, install a schedule, write the daily probe, or commit independently.
+子技能必须核验日期、当前转写包，以及 `<WORKSPACE_ROOT>/MEMORY/phase_a_receipt.json` 的 `logical_date` 与目标逻辑日一致。它管辖周账核对、周工作归档、每周记忆池代谢、毕业提案和季度检测；不负责抽取转写、安装排程、写每日探针或独立提交。
 
-Keep its fixed return verbatim in the dream log. If it rejects or stops mid-run, record the exact reason and already-produced artifacts; do not fabricate the missing weekly outputs.
+把子技能的固定返回原样写入梦日志。若它拒绝执行或中途停止，记录精确原因和已经产出的工件；不得伪造缺失的周产物。
 
-### 8. Commit as one transaction
+### 10. 巡检、落账并作为一笔事务提交
 
-Commit in this order:
+**巡检**（代谢主干末端收尾扫描；本链是唯一无人值守班车，巡检无独立载体故附此趟）。逐项扫，异常记入梦日志：
 
-1. Write pool bodies and semantic evidence.
-2. Re-read touched entries and verify counts/state invariants.
-3. Finalize one compact dream log entry, including the verbatim weekly return or `not triggered`, and send it to storage-agent.
-4. Confirm storage-agent's write and U+FFFD check.
-5. Update `last_dream.md` to the completed logical date.
+- **锚点死链**：机械检索抽查节锚点是否可达，死链报出。
+- **前置信息一致性**：`updated` 字段与实际改动抽查，防“改了没更新、没改却动了时间戳”漂移。
+- **推进记录断头节点**：扫描活跃项目 `_progress/` 中开了问题却没有收口的节点。
+- **周段回执**：目标逻辑日为周日时核固定返回各行均在位；季度归档只接受 `quarterly-archive` 的回执，不在本步内联执行。
 
-If any earlier step fails, do not advance the probe. Preserve source files and report the exact failure.
+巡检是收尾扫描，不是代谢——只报与轻量清，不在此做重判断。
 
-## Completion report
+**提交**按以下顺序执行，不得换序：
 
-Report only:
+1. 写入记忆池正文和语义证据。
+2. 重读触及的条目，核验计数和状态不变量。
+3. 定稿一条紧凑的梦日志，含容量报数、巡检异常，以及周日分支的原样返回或“未触发”，然后交给 `storage-agent`。
+4. 确认 `storage-agent` 已完成写入和 U+FFFD 检查。
+5. 待 C 级裁决项（毕业候选、权威源冲突）追加到 `<WORKSPACE_ROOT>/Long_Term_Memory/_pending_verdicts.md`，保证每会话可见直到处理。
+6. 写提交收据 `<WORKSPACE_ROOT>/MEMORY/dream_receipts/YYYY-MM-DD.json` 为 `COMMITTED`：仅在覆盖、A 段、决策、审计与 `MEMORY_LOG.md` 全部完成后执行。
+7. 把 `last_dream.md` 更新为已经完成的逻辑日期。
 
-- logical date and session/turn coverage
-- before/after pool counts
-- created, strengthened, corrected, consolidated, decayed, awakened, or deleted entries
-- missing work-library records and C-level proposals
-- probe status and the weekly/quarterly child state
+任何更早步骤失败时都不得写提交收据、不得推进探针。保留源文件，并报告精确失败点。
 
-Do not narrate project work or paste transcript content into the report.
+## 完成报告
+
+只报告：
+
+- 逻辑日期及会话/回合覆盖量
+- A 段固化的落点数、覆盖记录条数与 A 段收据状态
+- 记忆池处理前后的计数
+- 新建、增强、校正、统合、衰减、唤醒或删除的条目
+- 缺失的工作库记录和 C 级提案
+- 巡检异常项
+- 提交收据与探针状态，以及周日/季度子分支状态
+
+不得在报告中复述项目工作，也不得粘贴转写原文。

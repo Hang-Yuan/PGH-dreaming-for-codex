@@ -1,36 +1,25 @@
-# Retired hooks · 2026-08-01
+# 退役钩子 · 2026-08-01
 
-These two hooks are kept for migration forensics only. They are **not registered** in
-`config.toml` and must not be re-registered.
+这两个钩子仅用于迁移取证。它们**未注册**进 `config.toml`，不得重新注册。
 
-## `session_end.py`
+## 会话结束钩子（`session_end.py`）
 
-Matched goodbye phrases (`晚安` / `今天就到这儿` / `收工`) and injected "call the full
-daily-dream flow first".
+原钩子匹配道别语（`晚安` / `今天就到这儿` / `收工`），并注入“先调用完整每日做梦流程”的指令。
 
-Retired because consolidation moved off the goodbye and onto the OS schedule. Parting no
-longer consolidates: the day's work stays in the session transcript overnight (the
-transcript **is** the L0 source), and the scheduled run at day-boundary + 30 minutes
-processes the just-closed logical day.
+工作固化移出道别节点并交给原生排程后，该钩子退役。道别不再触发固化：当日工作留在会话转写中跨夜保存（转写就是 L0 来源），日界线后 30 分钟的排程处理刚闭合的逻辑日。
 
-The goodbye trigger had a failure mode that could not be fixed in place — it ran while the
-user was still present and mid-day work was still open, so it either consolidated an
-unfinished day or consolidated nothing and left the user believing it had run. A schedule
-that fires after the window closes has neither problem.
+道别触发存在无法原位消除的故障模式：触发时用户仍在场，当日工作仍可能开放，因而可能固化未完成的一天，也可能没有固化却让用户误以为已经执行。窗口闭合后的排程没有这两个问题。
 
-## `session_context_check.py`
+## 会话上下文检查钩子（`session_context_check.py`）
 
-Per-message context routing. Superseded by `thinking_protocol.py` plus the routing table in
-`AGENTS.md §R`. Two hooks writing routing hints per message meant the effective route
-depended on their relative order, which nothing enforced.
+原钩子负责逐消息上下文路由，现由 `thinking_protocol.py` 与 `AGENTS.md §R` 的路由表接替。两个钩子若在每条消息上同时写路由提示，实际路由将依赖未受约束的相对执行顺序。
 
-## Active hook inventory
+## 现役钩子清单
 
-The registered set is exactly three, whitelist-managed — an unregistered script in
-`hooks/` is drift:
+注册集合固定为以下三项并按白名单管理；`hooks/` 中出现未注册脚本即视为漂移：
 
-| hook | event | job |
+| 钩子 | 事件 | 职责 |
 |---|---|---|
-| `timesense.py` | UserPromptSubmit | inject real current time |
-| `thinking_protocol.py` | UserPromptSubmit | inject the thinking protocol |
-| `session_start.py` | SessionStart (compact) | re-inject the identity layer |
+| `timesense.py` | 用户提交提示（`UserPromptSubmit`） | 注入真实当前时间 |
+| `thinking_protocol.py` | 用户提交提示（`UserPromptSubmit`） | 注入思考协议 |
+| `session_start.py` | 会话启动（`SessionStart`，含上下文压缩恢复） | 重新注入身份层 |

@@ -1,142 +1,142 @@
 ---
 name: merak-weekly-review
-description: Review and archive [AI 名字]'s weekly work layer without directly metabolizing memory pools. Use on Sunday, for an explicit weekly review, or from the scheduled daily-review stage; audit the weekly ledger, align the main line, archive the week when authorized, and hand Sunday memory work to merak-dream.
+description: "复审并归档代理的周级工作层，不直接代谢记忆池。原用于周日、显式周复审或排程中的每日复审阶段；核对周账、对齐主线、获授权后归档，并把周日记忆工作交给每日做梦。现已退役。"
 ---
 
-# Weekly Review（已退役）
+# 周级复审（`merak-weekly-review`，已退役）
 
-Close the weekly work-record stream. `merak-dream` owns Sunday episodic/semantic consolidation.
+闭合周级工作记录流。每日做梦（`merak-dream`）持有周日的情景记忆与语义记忆统合。
 
-## Boundaries
+## 边界
 
-- Read `_本周.md`, LTM current situation/timeline, and active project overview/progress files.
-- Shared workbench/LTM/project writes require current authorization.
-- Never read or write episodic/semantic pools or either private log in this skill.
-- Quarterly deletion/archiving and identity-layer changes require explicit C verdict.
-- Unattended scheduled mode must not wait for user input; held items remain explicit and the flow continues.
+- 读取 `_current.md`、长期记忆的当前处境与时间轴，以及现役项目概览和推进文件。
+- 共享工作台、长期记忆与项目文件写入需要当前授权。
+- 本技能不得读写情景记忆池、语义记忆池或两份私有日志。
+- 季度删除 / 归档与身份层变更需要明确 C 级裁决。
+- 无人值守排程不得等待用户输入；明确保留暂缓项并继续流程。
 
-## Loading chain
+## 加载链
 
-**Upstream**: Sunday `merak-daily-review`; `merak-week-sync` Sunday reminder; explicit “weekly review / this week summary”.
+**上游**：周日每日复审（`merak-daily-review`）；周同步（`merak-week-sync`）的周日提醒；显式“周复审 / 本周总结”。
 
-**Downstream**: `_本周.md` summary/archive, new-week workbench, LTM timeline/current situation, active project pointers.
+**下游**：`_current.md` 总结与归档、新一周工作台、长期记忆时间轴与当前处境、现役项目指针。
 
-**Peer interface**: `merak-dream §7. Add the Sunday load when applicable` performs all weekly memory operations after the work layer is closed and the logical-day window has ended.
+**同级接口**：工作层闭合且逻辑日窗口结束后，由每日做梦（`merak-dream`）执行全部周级记忆操作。
 
-## Preparation
+## 准备
 
-1. Resolve the logical date from `00.memory_agent.md §逻辑日期`.
-2. Read `_本周.md` completely.
-3. Read LTM `§当前处境` and `§时间轴`.
-4. Identify active projects from weekly progress and read each `_overview.md`; follow only relevant progress pointers.
-5. Determine whether the run is interactive or unattended.
+1. 根据 `00.memory_agent.md §逻辑日期` 解析逻辑日期。
+2. 完整读取 `_current.md`。
+3. 读取长期记忆 `§当前处境` 与 `§时间轴`。
+4. 从周级推进识别现役项目，读取各项目 `_overview.md`，只沿相关推进指针下沉。
+5. 判断本次运行是交互模式还是无人值守模式。
 
-## Workflow
+## 执行流程
 
-### 1. Audit ledger versus filesystem
+### 1. 核对周账与文件系统
 
-Treat `_本周.md` as the ledger and current-week file changes as evidence.
+把 `_current.md` 视为账本，把本周文件变更视为证据。
 
-1. Collect files named in every `关联：` line.
-2. Scan active project roots for Markdown files modified since the week start.
-3. Exclude archives, static overviews, reference catalogs, and generated artifacts that are not work outputs.
-4. Inspect only enough of each difference file to determine whether it is missing work.
-5. Add confirmed missing events to the proposed weekly ledger; mark uncertain dates as `待确认`.
-6. Mark checkboxes complete only when the progress record proves completion.
+1. 收集每条 `关联：` 中点名的文件。
+2. 扫描现役项目根中本周开始后修改的 Markdown 文件。
+3. 排除归档、静态概览、文献目录和不属于工作产出的生成物。
+4. 对每个差异文件只读到足以判断是否存在漏记工作。
+5. 把确认漏记的事件加入拟议周账；日期不确定时标 `待确认`。
+6. 仅在推进记录证明完成时勾选完成。
 
-Do not treat mtime alone as proof of substantive work.
+不得只凭修改时间判定存在实质工作。
 
-### 2. Build the weekly panorama
+### 2. 建立周级全景
 
-Summarize:
+汇总：
 
-- task completion status
-- core progress and concrete outputs
-- decisions and reversals
-- cross-project connections
-- unexpected discoveries
-- unresolved items
+- 任务完成状态；
+- 核心推进与具体产出；
+- 决策与反转；
+- 跨项目连接；
+- 意外发现；
+- 未决项。
 
-Filter unresolved items:
+筛选未决项：
 
-- absorbed by later work -> close as absorbed
-- no longer supports the main/secondary contradiction -> drop with reason
-- transactional/researchable -> delegate explicitly
-- still live -> carry forward with exact breakpoint
+- 已被后续工作吸收 → 按“已吸收”闭合；
+- 已不支持主要 / 次要矛盾 → 写明理由后移除；
+- 事务型或可检索 → 明确派发；
+- 仍有效 → 带精确断点结转。
 
-### 3. Give the user reflection space
+### 3. 给用户保留反思空间
 
-In interactive mode, present the panorama and ask what felt especially important, changed, or remained unresolved. Incorporate that input before archiving.
+交互模式下，展示全景并询问哪些内容尤其重要、发生变化或仍未解决，归档前吸收回答。
 
-In unattended mode, skip the wait and preserve a clearly labeled reflection gap; do not invent feelings or judgments.
+无人值守模式跳过等待并保留明确标记的反思空位；不得编造感受或判断。
 
-### 4. Check main-line alignment
+### 4. 检查主线对齐
 
-Compare the week against LTM `§当前处境`:
+把本周与长期记忆 `§当前处境` 对照：
 
-- Did the principal contradiction advance?
-- Was a detour valuable enough to justify displacement?
-- Is the current-situation snapshot stale?
+- 主要矛盾是否推进；
+- 岔路的价值是否足以解释主线让位；
+- 当前处境快照是否过时。
 
-Write shared LTM only with authorization; otherwise send a concrete replacement proposal .
+仅在获授权时写共享长期记忆；否则发出具体替换提案。
 
-### 5. Resolve current states truthfully
+### 5. 如实判定当前状态
 
-For every major work line, distinguish:
+每条主要工作线必须区分：
 
-- experimentally advanced
-- design-converged
-- validated but not fully tested
-- waiting for C verdict
-- promoted/deployed
-- blocked or untouched
+- 实验上已推进；
+- 设计已收敛；
+- 已验证但测试尚不完整；
+- 等待 C 级裁决；
+- 已晋升 / 已部署；
+- 受阻或未动。
 
-For the current meta toolchain:
+当前元工具链还要区分：
 
-- MetaScale = meta-skill line; experimental candidate progress is separate from runtime promote.
-- UltraScale = meta-orchestrator line; spec/test progress is separate from a deployable orchestrator.
+- 元技能系统：实验候选的推进与现役晋升分开记录。
+- 元编排系统：规范 / 测试推进与可部署编排器分开记录。
 
-Never rewrite “not promoted” as “no substantive progress.”
+不得把“尚未晋升”改写成“没有实质推进”。
 
-### 6. Prepare the weekly output block
+### 6. 准备周级产出块
 
-When authorized, append `### 本周产出` to `_本周.md` with:
+获得授权后，在 `_current.md` 追加 `### 本周产出`，包含：
 
-- core progress
-- key outputs
-- key decisions
-- filtered carryovers
-- memory status pointer: `Sunday memory consolidation handled separately by merak-dream`
+- 核心推进；
+- 关键产出；
+- 关键决策；
+- 筛选后的结转项；
+- 记忆状态指针：周日记忆统合由每日做梦（`merak-dream`）单独处理。
 
-Without authorization, .
+没有授权时，只准备精确提案。
 
-### 7. Archive and open the next week
+### 7. 归档并开启下一周
 
-When authorized:
+获得授权后：
 
-1. Archive `_本周.md` as `_归档/YYYY-Wnn.md`.
-2. Insert the week at the top of LTM `§时间轴` and append its detailed week record.
-3. Create the next `_本周.md` with the standard load chain; invoke `merak-new-file` for any new Markdown file.
-4. Carry forward only surviving items from step 2.
+1. 把 `_current.md` 归档为 `_archive/{YYYY}/Q{n}/YYYY-Wnn.md`。
+2. 把该周插入长期记忆 `§时间轴` 顶部，并追加详细周记录。
+3. 按标准加载链创建下一份 `_current.md`；新建 Markdown 文件时调用 `merak-new-file`。
+4. 只结转第 2 步筛选后仍有效的项目。
 
-Without authorization, prepare a  package listing every target file and exact proposed change.
+没有授权时，准备一个列出每个目标文件和精确拟议变更的工作包。
 
-### 8. Check the quarterly boundary
+### 8. 检查季度边界
 
-Trigger a quarterly proposal when either:
+满足任一条件时生成季度提案：
 
-- the logical Sunday is the quarter's final Sunday, or
-- 13 unarchived detailed-week sections have accumulated.
+- 该逻辑周日是季度最后一个周日；
+- 已累计 13 个未归档的详细周节。
 
-Quarterly archive targets are LTM, MEMORY_LOG, and ITERATION_LOG. Obtain explicit C verdict, then send the job to Kulou and verify the returned structure/counts. Do not infer authorization from the trigger.
+季度归档目标为长期记忆、`MEMORY_LOG.md` 与 `ITERATION_LOG.md`。先取得明确 C 级裁决，再把任务交给归档执行子代理并核验返回的结构与计数。不得从触发条件推定授权。
 
-### 9. Hand off Sunday memory work
+### 9. 交接周日记忆工作
 
-Do not touch memory pools here.
+本技能不触碰记忆池。
 
-- Scheduled 06:10 automation: after this skill completes, invoke `merak-dream` for the same Sunday logical date.
-- Interactive full review: if [用户称呼] explicitly asks to include memory and the Sunday logical-day window is complete, invoke `merak-dream`; otherwise report that the scheduled run will do it.
+- 每日排程：本技能完成后，为同一周日逻辑日期调用每日做梦（`merak-dream`）。
+- 交互式完整复审：仅当用户明确要求纳入记忆且周日逻辑日窗口已闭合时调用每日做梦；否则说明排程将处理。
 
-## Completion report
+## 完成报告
 
-Report the panorama, main-line judgment, files updated/proposed, carried items, archive state, quarterly trigger state, and Sunday dream handoff. Keep memory statistics out until merak-dream returns them.
+报告周级全景、主线判断、已更新或拟议文件、结转项、归档状态、季度触发状态与周日做梦交接。每日做梦返回前不得填报记忆统计。

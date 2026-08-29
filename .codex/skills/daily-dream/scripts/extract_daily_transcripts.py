@@ -44,13 +44,11 @@ class Message:
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser()
     parser.add_argument("--date", required=True, help="Logical date in YYYY-MM-DD form")
-    # 默认 `None` 而不是 `DEFAULT_TZ`：默认值填成常量的话，`resolve_timezone()` 永远
-    # 收到一个非空字符串，会当成「用户显式指定」而直接返回，收据里的真实时区一辈子读
-    # 不到——这正是 A13#2 的形态。
+    # Keep the default empty so the installed Codex authority line can win.
     parser.add_argument("--timezone", default=None,
-                        help="IANA 时区名。默认从排程收据读，不写死 Asia/Shanghai")
+                        help="IANA 时区名。默认从 AGENTS.md §时间感知读取")
     parser.add_argument("--boundary-hour", type=int, default=None,
-                        help="日界线整点。默认从排程收据 / 已安装权威源读，不写死 06:00")
+                        help="日界线整点。默认从已安装 AGENTS.md 读取")
     parser.add_argument("--sessions-root", type=Path, default=DEFAULT_SESSIONS)
     parser.add_argument("--archived-root", type=Path, default=DEFAULT_ARCHIVED)
     parser.add_argument("--output-dir", type=Path)
@@ -316,35 +314,19 @@ def write_bundle(
 #: 日界线的兜底值。仅在读不到任何权威源时使用，且必须在 stderr 说明它是兜底。
 FALLBACK_BOUNDARY = 6
 
-BOUNDARY_RE = re.compile(r"物理\s*hour\s*<\s*(\d{1,2}):00")
+BOUNDARY_RE = re.compile(r"物理\s*(?:小时|hour)\s*<\s*(\d{1,2}):00")
+TIMEZONE_RE = re.compile(r"IANA\s*(?:时区|timezone)\s*=\s*([A-Za-z0-9_+./-]+)", re.I)
 
 
 def resolve_boundary_hour(explicit: int | None = None) -> tuple[int, str]:
     """求当前部署的日界线。返回 `(小时, 证据来源)`。
 
-    **不能写死 06:00。** 日界线由部署者作息决定（`install_schedule.py` 在 02:00-06:00
-    里挑一个整点写进权威源）。写死会让早睡早起的部署者每天判错一天：他 04:00 的工作已
-    属新的一天，按 06:00 算会被归到前一天——而这个错误稳定复现且不报错，抽取窗口整体
-    偏移一段，代谢读到的是拼接错的两个半天。
-
-    读取顺序：显式参数 → 排程收据 → 已安装权威源正文 → 兜底。收据优先于正文是因为
-    收据是安装器写的机器可读字段，正文是给人看的镜像，人可能手改过其中一处。
+    日界线由 Codex 初始化访谈写进 AGENTS.md。读取顺序：显式参数 → 已安装权威源 → 兜底。
     """
     if explicit is not None:
         return explicit, "--boundary-hour 显式指定"
 
-    for rt in ("codex", "claude"):
-        rp = Path.home() / ".pgh" / f"schedule_receipt.{rt}.json"
-        try:
-            data = json.loads(rp.read_text(encoding="utf-8"))
-            h = int(data["boundary_hour"])
-            if 0 <= h <= 23:
-                return h, f"排程收据 {rp.name}"
-        except (OSError, ValueError, KeyError, TypeError):
-            continue
-
-    for cand in (Path.home() / ".codex" / "AGENTS.md",
-                 Path.home() / ".claude" / "CLAUDE.md"):
+    for cand in (Path.home() / ".codex" / "AGENTS.md",):
         try:
             m = BOUNDARY_RE.search(cand.read_text(encoding="utf-8"))
             if m:
@@ -354,45 +336,62 @@ def resolve_boundary_hour(explicit: int | None = None) -> tuple[int, str]:
         except OSError:
             continue
 
-    return FALLBACK_BOUNDARY, (f"**兜底 {FALLBACK_BOUNDARY:02d}:00**——读不到收据与权威源，"
+    return FALLBACK_BOUNDARY, (f"**兜底 {FALLBACK_BOUNDARY:02d}:00**——读不到 Codex 权威源，"
                                "若本机日界线不是这个值，抽取窗口会整体偏移")
+
+
+def _receipt_timezone() -> str | None:
+    """从安装收据取 IANA 时区名；取不到返回 None。
+
+    已装机器（install_schedule 部署的）时区权威在收据里：先读顶层 `timezone_iana`，
+    缺省或 `UNRESOLVED` 时落到 `acceptance` 嵌套（旧安装器把验收时区写在那里）。
+    v6.2.2 原生任务部署没有收据，返回 None，继续向下走 AGENTS.md。
+    收据里的值也可能是坏的（手改 / 半截写入），过不了 `ZoneInfo` 的一律不信。
+    """
+    path = Path.home() / ".pgh" / "schedule_receipt.codex.json"
+    try:
+        data = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return None
+    for cand in (data.get("timezone_iana"),
+                 (data.get("acceptance") or {}).get("timezone_iana")):
+        if not cand or cand == "UNRESOLVED":
+            continue
+        try:
+            ZoneInfo(cand)
+        except (KeyError, ValueError):
+            continue
+        return cand
+    return None
 
 
 def resolve_timezone(explicit: str | None = None) -> tuple[str, str]:
     """求当前部署的 IANA 时区名。返回 `(时区名, 证据来源)`。
 
-    与日界线同理，**不能写死 `Asia/Shanghai`**。抽取窗口是「目标日 日界线 → 次日 日界
-    线」的本地墙钟区间，时区错了整个窗口就整体平移：对 `America/New_York` 的部署者用
-    上海时区去切，窗口偏 12 小时以上，抽出来的是拼接错的两个半天，而 `manifest.json`
-    里的日期、条数、路径全都自洽，故错位在产物上看不出来。
-
-    读取顺序：显式参数 → 排程收据（顶层优先、`acceptance` 嵌套兜底）→ 兜底常量。
-    嵌套兜底是为已装机器：它们的收据只有嵌套那一份。
-
-    `UNRESOLVED` 不是时区名，视为读不到——Windows 上探测拿不到 IANA 名时收据里就是它。
+    读取顺序：显式参数 → 安装收据 → Codex AGENTS.md §时间感知 → 兜底常量。
     """
     if explicit:
         return explicit, "--timezone 显式指定"
 
-    for rt in ("codex", "claude"):
-        rp = Path.home() / ".pgh" / f"schedule_receipt.{rt}.json"
-        try:
-            data = json.loads(rp.read_text(encoding="utf-8"))
-        except (OSError, ValueError):
-            continue
-        nested = data.get("acceptance")
-        for name, where in ((data.get("timezone_iana"), rp.name),
-                            ((nested or {}).get("timezone_iana")
-                             if isinstance(nested, dict) else None,
-                             f"{rp.name} acceptance（旧结构）")):
-            if isinstance(name, str) and name.strip() and name != "UNRESOLVED":
-                try:
-                    ZoneInfo(name.strip())
-                except (KeyError, ValueError):
-                    continue
-                return name.strip(), f"排程收据 {where}"
+    receipt = _receipt_timezone()
+    if receipt:
+        return receipt, "安装收据 schedule_receipt.codex.json"
 
-    return DEFAULT_TZ, (f"**兜底 {DEFAULT_TZ}**——读不到收据里的 IANA 时区名，"
+    authority = Path.home() / ".codex" / "AGENTS.md"
+    try:
+        match = TIMEZONE_RE.search(authority.read_text(encoding="utf-8"))
+    except OSError:
+        match = None
+    if match:
+        name = match.group(1)
+        try:
+            ZoneInfo(name)
+        except (KeyError, ValueError):
+            pass
+        else:
+            return name, "AGENTS.md §时间感知"
+
+    return DEFAULT_TZ, (f"**兜底 {DEFAULT_TZ}**——读不到 Codex 权威源里的 IANA 时区名，"
                         "若本机不在该时区，抽取窗口会整体平移")
 
 

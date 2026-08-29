@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """audit_stale_routes.py — 现役 authority tree 的旧路由机械闸
 
-安装器修对了不等于系统对了。两个仓的**现役权威树**里若还留着旧路由，部署后照旧走老
+原生 Automation 接对了不等于系统对了。现役权威树里若还留着旧路由，部署后仍会走老
 行为：告别时去调固化、按写死的 06:10 算日子、指向已退役的 skill。这些都不会报错——
 它们只是让新部署的用户跑在一个已经不存在的架构上。
 
@@ -25,7 +25,7 @@ from pathlib import Path
 
 #: 排除路径片段：历史区、日志、版本化归档、依赖与生成产物。
 EXCLUDE_PARTS = ("_retired_", "node_modules", ".git", "dist", "build",
-                 "__pycache__", "_归档", "_archive")
+                 "__pycache__", "_archive")
 
 #: 排除文件名：以过程追踪为职责的文件，允许并且应该写旧判断。
 EXCLUDE_NAMES = ("CHANGELOG.md", "ITERATION_LOG.md", "MEMORY_LOG.md")
@@ -37,8 +37,8 @@ ACTIVE_GLOBS = (
     ".claude/hooks/*.py", ".claude/hooks/*.sh", ".codex/hooks/*.py",
     ".claude/skills/*/SKILL.md", ".codex/skills/*/SKILL.md",
     ".claude/agents/*.md", ".codex/agents/*.md",
-    "assistant/MEMORY/00.memory_agent.md",
-    "assistant/MEMORY/00.记忆区_agent.md",
+    "workspace/MEMORY/00.memory_agent.md",
+    "workspace/MEMORY/00.记忆区_agent.md",
     "README.md",
 )
 

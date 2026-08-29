@@ -1,4 +1,4 @@
 interface:
-  display_name: "Weekly Dream"
-  short_description: "Run the Sunday-only weekly branch inside daily-dream"
-  default_prompt: "Use $weekly-dream with an explicit Sunday --date and the exact daily-dream --bundle; return the fixed weekly receipt without committing independently."
+  display_name: "周级做梦"
+  short_description: "在每日做梦内运行仅限周日的周级分支"
+  default_prompt: '使用周级做梦技能（$weekly-dream），并显式提供周日日期参数（`--date`）与每日做梦的精确转写包参数（`--bundle`）；返回固定周段回执，禁止独立提交。'

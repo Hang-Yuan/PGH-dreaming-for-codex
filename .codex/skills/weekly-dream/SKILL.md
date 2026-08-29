@@ -1,88 +1,88 @@
 ---
 name: weekly-dream
-description: Run the weekly work and memory branch for an explicitly named Sunday. Use when daily-dream delegates a Sunday target, when the user asks to backfill or audit one weekly branch, or when week-sync identifies a missing Sunday branch. Require --date and --bundle; never infer either. Detect quarter points through quarterly-archive but never execute a quarterly archive automatically.
+description: 对明确指定的周日运行周级工作与记忆分支。每日做梦转交周日目标、用户要求补跑或审计某个周段、周同步发现周日分支缺失时使用。必须显式提供日期与转写包，禁止自行推算；通过季度归档技能检测季度点，禁止自动执行季度归档。
 ---
 
-# Weekly Dream
+# 周级做梦（`weekly-dream`）
 
-Run Steps 1–6 in order. This skill is a conditional child of `daily-dream`: it does not extract transcripts, install another schedule, commit independently, or advance `last_dream.md`.
+按第 1–6 步顺序执行。本技能是 `daily-dream` 的条件子链：不抽取转写、不安装第二条排程、不独立提交，也不推进 `last_dream.md`。
 
-The rule kernel is `<ASSISTANT_ROOT>/MEMORY/00.memory_agent.md`.
+规则内核是 `<WORKSPACE_ROOT>/MEMORY/00.memory_agent.md`。
 
-## Fixed return
+## 固定回执
 
-Return exactly seven lines to the parent; unreached fields remain present as `not-executed`:
+向父链精确返回七行；未执行字段仍须保留并写 `未执行`：
 
 ```text
-weekly_status: CLOSED | REJECT <exact reason> | STOPPED step N <exact reason>
-work_layer: panorama=<count> archive=<path> weekly=<written> current_state=<written|unchanged> new_week=<written>
-ledger_diff: missing=<count> fixed=<count> pending=<count>
-memory_ops: candidates=<before>-><after> clusters=<count> episodic_deleted=<count> semantic_up=<count> semantic_down=<count>
-graduation: none | <count and titles>
-quarterly: quarter_point=<bool> last_sunday=<bool> week_sections=<count> receipt=<verbatim child result|not-triggered>
-handoff: present | absent | unread
+周段状态：闭合 | 拒绝 <精确原因> | 中断于第 N 步 <精确原因>
+工作层：全景=<数量> 归档=<路径> 周录=<已写> 当前处境=<已写|未变> 新周=<已写>
+账实差集：漏记=<数量> 已补=<数量> 待定=<数量>
+记忆操作：候选=<前值>→<后值> 统合簇=<数量> 情景删除=<数量> 语义升格=<数量> 语义降级=<数量>
+毕业候选：无 | <数量与标题>
+季度点：quarter_point=<布尔值> last_sunday=<布尔值> week_sections=<数量> 回执=<子链原文|未触发>
+交接：在位 | 缺失 | 未读
 ```
 
-## Step 1 · Validate the parent transaction
+## 第 1 步 · 校验父事务
 
-Require both `--date YYYY-MM-DD` and `--bundle /tmp/daily-dream/YYYY-MM-DD`. Reject with zero writes unless:
+必须同时提供 `--date YYYY-MM-DD` 与 `--bundle /tmp/daily-dream/YYYY-MM-DD`。以下条件缺一即拒绝并保持零写入：
 
-- the date is Sunday;
-- bundle manifest date matches the argument and has no unexplained extraction error;
-- the daily chain's phase-A completion receipt exists and matches the same logical date;
-- the parent has a complete phase-B decision table with evidence anchors and before/after pool counts.
+- 目标日期是周日；
+- 转写包清单日期与参数一致，且没有未解释的抽取错误；
+- 日链 A 段完成收据 `<WORKSPACE_ROOT>/MEMORY/phase_a_receipt.json` 存在且可解析，其 `logical_date` 与本次目标逻辑日一致；
+- 父链已提供完整的 B 段裁决表、证据锚点和记忆池前后数量。
 
-An `_本周.md` date block is not a phase-A receipt. Missing work consolidation would make the weekly archive permanently omit Sunday work.
+`_current.md` 的日期段不构成 A 段收据。工作固化缺失会让周归档永久漏掉周日工作。
 
-## Step 2 · Consolidate the weekly work layer
+## 第 2 步 · 固化周级工作层
 
-Read `### 周日梦载荷交接` once before archive work. Absence is `handoff: absent`, not failure.
+归档前只读一次 `### 周日梦载荷交接`。该节缺失记为“交接：缺失”，不构成失败。
 
-In order:
+严格按顺序执行：
 
-1. append `### 本周产出` to `_本周.md` with outputs, decisions, reversals, unresolved items, and truthful deploy status;
-2. archive the finished week under `00 Focus Zone/_归档/`;
-3. update the LTM time axis and detailed weekly record through storage-agent;
-4. update current-state/main-line text only when the week materially changed it;
-5. create the new `_本周.md` through `new-file`, carrying only genuine unresolved items.
+1. 向 `_current.md` 追加 `### 本周产出`，写明产出、决策、反转、未决项与真实部署状态；
+2. 把已结束周归档到 `00 Focus Zone/_archive/{YYYY}/Q{n}/`；
+3. 通过存储代理（`storage-agent`）更新 `Long_Term_Memory/status.md` 当前快照与 `weekly.md` 周录；
+4. 仅在本周实质改变当前主线时更新当前处境；
+5. 通过 `new-file` 创建新 `_current.md`，只继承真实未决项。
 
-Summary precedes archive; archive precedes the new weekly file.
+总结先于归档，归档先于新周文件。
 
-## Step 3 · Reconcile ledger and artifacts
+## 第 3 步 · 核对账目与实际产物
 
-Compare weekly progress pointers with the actual work artifacts and load chains. Read content before classifying a difference; mtime alone is not evidence of substantive work. Repair confirmed omissions before the archive closes, and mark uncertain dates as pending. A zero difference is explicit.
+把周进展指针与实际工作产物及加载链逐项对照。必须先读内容再判差异，`mtime` 不能单独充当实质工作证据。归档闭合前补齐已确认的漏记项，日期不确定的条目标为待定；零差集也要明确写出。
 
-## Step 4 · Run weekly pool metabolism
+## 第 4 步 · 执行周级记忆池代谢
 
-Use fresh full-file state and the kernel's current rules:
+使用现场全文件状态和内核当前规则：
 
-1. rescan capacity and clear the weekly promotion-candidate inventory;
-2. horizontally consolidate active/review episodic rows, writing semantic body/evidence before deleting contributors;
-3. recompute episodic decay from current evidence, never a historical deletion list;
-4. review semantic hits/breaks, repair or demote by schema type, and enforce capacity;
-5. rescan and report exact before/after counts plus every rule-level exception.
+1. 重扫容量并清空本周升格候选库存；
+2. 横向统合活动态和复审态情景记忆，先写语义记忆本体与证据，再删除贡献来源；
+3. 根据当前证据现场重算情景记忆衰减，禁止沿用历史删除名单；
+4. 复审语义记忆的命中与击穿，按模式类型修订或降级，并执行容量约束；
+5. 再次扫描并报告精确前后数量及每个规则级例外。
 
-Pool-row changes are N-level and must be disclosed. Send MEMORY_LOG text to storage-agent; do not edit the log directly.
+记忆池行级变更属于 N 级动作，必须披露。把 `MEMORY_LOG` 定稿文本交给 `storage-agent`，禁止直接编辑日志。
 
-## Step 5 · Produce graduation candidates
+## 第 5 步 · 生成毕业候选
 
-Apply the kernel's stability and independent-distillation rules. Produce proposals and hook sandbox evidence only. USER, SOUL, AGENTS, skills, and hooks require a current C verdict and remain untouched by the unattended chain.
+执行内核的稳定性与独立蒸馏规则，只生成提案和钩子沙盒证据。USER、SOUL、AGENTS、技能和钩子都需要当前 C 级裁决，无人值守链不得改动。
 
-## Step 6 · Detect the quarterly boundary
+## 第 6 步 · 检测季度边界
 
-Use the explicit Sunday `D`. `quarter_point` is true when `D + 7 days` crosses quarter/year or when unarchived weekly sections since the previous archive are at least 13. Report `last_sunday`, `week_sections`, and the result separately.
+使用显式周日 `D`。当 `D + 7 天` 跨季度或年份，或上次归档后未归档周录节不少于 13 节时，`quarter_point` 为真。分别报告 `last_sunday`、`week_sections` 与最终结果。
 
-When true, invoke:
+命中时调用：
 
 ```text
 $quarterly-archive --mode detect --date <D>
 ```
 
-Include its result verbatim. When false, do not invoke it. Detect mode inventories and creates a C-level pending proposal; it never executes an archive.
+把子链结果原文并入回执。未命中时不调用。检测模式（`detect`）只清点并生成 C 级待裁提案，绝不执行归档。
 
-## Boundaries
+## 边界
 
-- Never infer date or bundle, and never process an open logical day.
-- Never extract transcripts, install a second scheduler, commit, or advance the daily probe.
-- Never read/write MEMORY_LOG or ITERATION_LOG directly.
-- Weekly failure returns the exact stopping point; it does not fabricate closure.
+- 禁止自行推算日期或转写包，禁止处理仍开放的逻辑日。
+- 禁止抽取转写、安装第二条排程、独立提交或推进日级探针。
+- 禁止直接读写 `MEMORY_LOG` 或 `ITERATION_LOG`。
+- 周段失败必须返回精确停止点，禁止伪造闭合。

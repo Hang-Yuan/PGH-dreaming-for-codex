@@ -1,92 +1,92 @@
 ---
 name: merak-daily-review
-description: Consolidate [AI 名字]'s current-day work into project progress, the weekly workbench, and handoff records without touching memory pools. Extract the full session bundle for the logical date, then fix work events into authority layers. Use on goodbye/session-end, an explicit daily summary request, or as the work-layer stage of the scheduled 06:10 automation before merak-dream.
+description: "把代理当前逻辑日的工作固化到项目推进、周工作台与交接记录，不触碰记忆池。抽取该逻辑日的完整会话包，再把工作事件写入对应权威层。原用于道别或会话结束、显式日总结请求，或每日做梦之前的工作层阶段；现已退役。"
 ---
 
-# Daily Review（已退役）
+# 每日复审（`merak-daily-review`，已退役）
 
-Close the work-record stream for one logical day. Memory extraction is owned by `merak-dream`; this skill never writes episodic or semantic pools.
+闭合一个逻辑日的工作记录流。记忆提取由每日做梦（`merak-dream`）持有；本技能从不写情景记忆池或语义记忆池。
 
-## Boundaries
+## 边界
 
-- Paths under <ASSISTANT_ROOT> and <CODEX_HOME> may be updated within existing S/N authority.
-- Shared `_本周.md`, LTM, USER, and project authority files remain read-only unless [用户称呼] explicitly authorizes the write.
-- Do not read/write `MEMORY_LOG.md` or `ITERATION_LOG.md` directly.
-- Do not read or write `episodic_inbox.md`, `episodic_memory.md`, or `semantic_memory.md` in this workflow.
-- Run idempotently: the scheduled automation may revisit work already recorded by a goodbye-triggered run.
+- 在既有 S/N 权限内可更新 `<WORKSPACE_ROOT>` 与 `<CODEX_HOME>` 下的路径。
+- 共享 `_current.md`、长期记忆、用户身份档案和项目权威文件默认只读，用户明确授权后才写。
+- 不直接读写 `MEMORY_LOG.md` 或 `ITERATION_LOG.md`。
+- 本流程不读写 `episodic_inbox.md`、`episodic_memory.md` 或 `semantic_memory.md`。
+- 保持幂等：排程可能再次遇到已经由道别触发流程记录的工作。
 
-## Loading chain
+## 加载链
 
-**Upstream**: `session_end.py` goodbye signal; explicit “daily review / today summary / [AI 名字] handoff”; scheduled 06:10 automation stage A.
+**上游**：`session_end.py` 道别信号；显式“每日复审 / 今日总结 / 代理交接”；每日排程的 A 段。
 
-**Downstream**: active project `_overview.md` and `_progress/`; `_本周.md`; `merak-weekly-review` on a Sunday logical date.
+**下游**：现役项目 `_overview.md` 与 `_progress/`；`_current.md`；逻辑日为周日时调用周级复审（`merak-weekly-review`）。
 
-**Peers**: `merak-close-node` for closed work nodes; `merak-write-progress` for project reasoning chains; `merak-dream` for off-line schema metabolism.
+**同级接口**：闭合节点（`merak-close-node`）处理已闭工作节点；写入推进（`merak-write-progress`）处理项目推理链；每日做梦（`merak-dream`）处理离线模式代谢。
 
-## Workflow
+## 执行流程
 
-### 1. Resolve the logical date
+### 1. 解析逻辑日期
 
-Use `00.memory_agent.md §逻辑日期`. All work records and handoff dates use the logical date; current-time display uses physical time.
+使用 `00.memory_agent.md §逻辑日期`。所有工作记录和交接日期使用逻辑日期；当前时间显示使用物理时间。
 
-### 2. Extract the full session bundle for logical date D
+### 2. 抽取逻辑日 D 的完整会话包
 
-This is the first execution action of work-library consolidation: locate the full set of the day's active sessions before fixing any work event. Consolidation runs "locate the full day's sessions (this step) -> reconstruct timeline -> fix into authority layers (steps 3-6)".
+这是工作库固化的首个执行动作：写入任何工作事件之前，先定位当天全部活跃会话。固化顺序固定为“定位全天会话（本步）→ 重建时间线 → 写入权威层（第 3–6 步）”。
 
-Run:
+运行：
 
 ```bash
 <PYTHON_BIN> <CODEX_HOME>/skills/merak-dream/scripts/extract_daily_transcripts.py \
   --date YYYY-MM-DD
 ```
 
-The script writes a transient bundle under `/tmp/merak-dream/YYYY-MM-DD/` and prints a JSON summary. Inspect `manifest.json` before reading `transcript.md`.
+脚本在 `/tmp/merak-dream/YYYY-MM-DD/` 写临时会话包并打印 JSON 摘要。读取 `transcript.md` 前先检查 `manifest.json`。
 
-Hard checks:
+硬检查：
 
-- `errors` must be empty, or every error must be explained before continuing.
-- No included source may have `thread_source=subagent` or `thread_source=automation`.
-- Runtime scaffolding must not appear as user evidence.
-- The manifest window must be `06:00 -> next-day 06:00`.
-- Read all of `transcript.md` in chunks. Do not substitute recent context, the final turn, `_本周.md`, or a compact summary for the transcript bundle.
+- `errors` 必须为空；如不为空，继续前必须逐项解释。
+- 纳入的来源不得出现 `thread_source=subagent` 或 `thread_source=automation`。
+- 运行时脚手架不得当作用户证据。
+- 清单窗口必须是 `06:00 → 次日 06:00`。
+- 分块读完 `transcript.md`。不得用最近上下文、最后一轮、`_current.md` 或压缩摘要代替会话包。
 
-### 3. Reconstruct the full work timeline
+### 3. 重建完整工作时间线
 
-List every substantive phase from the session bundle in chronological order before judging importance. Do not collapse a long day into the final incident.
+判断重要度前，先按时间顺序列出会话包中的每个实质阶段。不得把漫长的一天压成最后一件事故。
 
-For each phase classify:
+逐阶段分类：
 
-- work event: what was done, chosen, built, tested, or rejected
-- project conclusion: a result that belongs in a project authority file
-- closed node: a solved subproblem or completed continuous work segment
-- unresolved item: a live decision, dependency, or C-level verdict
-- architecture/protocol change: belongs in ITERATION_LOG via storage-agent during the implementation turn, not as memory
+- 工作事件：做了、选择、建造、测试或否决了什么；
+- 项目结论：应进入项目权威文件的结果；
+- 已闭节点：已解决的子问题或已完成的连续工作段；
+- 未决项：仍开放的决策、依赖或 C 级裁决；
+- 架构 / 协议变更：应在实现当轮经存储代理写入 `ITERATION_LOG.md`，不作为记忆。
 
-### 4. Close missed nodes
+### 4. 补闭遗漏节点
 
-If a node is factually closed but `merak-close-node` has not run, invoke it.
+节点事实上已闭合且闭合节点技能尚未运行时，调用 `merak-close-node`。
 
-- Present the main-document judgment required by that skill.
-- In unattended scheduled mode, do not block: hold C-level document writes and continue.
-- The close-node memory exception is governed by its own skill; daily-review itself still does not touch a pool.
+- 提交该技能要求的主文档判断。
+- 无人值守排程中不得阻塞：暂缓 C 级文档写入并继续。
+- 闭合节点的记忆例外由其自身技能管辖；每日复审仍不触碰记忆池。
 
-### 5. Fix work events into the correct authority layer
+### 5. 把工作事件写入正确权威层
 
-Use the single-authority rule:
+遵守单一权威源：
 
-| Content | Destination |
+| 内容 | 去向 |
 |---|---|
-| project reasoning / decision chain | project `_progress/` via `merak-write-progress` |
-| project status / breakpoint | project `_overview.md` |
-| durable project conclusion | project main document after C verdict |
-| current-week actions and outputs | `_本周.md §进展记录` |
-| current-situation change | LTM §当前处境 after authorization |
+| 项目推理 / 决策链 | 经 `merak-write-progress` 写入项目 `_progress/` |
+| 项目状态 / 断点 | 项目 `_overview.md` |
+| 稳定项目结论 | 获得 C 级裁决后的项目主文档 |
+| 本周动作与产出 | `_current.md §进展记录` |
+| 当前处境变化 | 获授权后的长期记忆 `§当前处境` |
 
-Do not duplicate an entry already present for the same logical date and files. Extend it only with genuinely missing phases.
+同一逻辑日与同一组文件已有条目时不得重复；仅补充确实缺失的阶段。
 
-### 6. Update the weekly workbench
+### 6. 更新周工作台
 
-When authorized, append one date block to `_本周.md §进展记录`:
+获得授权后，在 `_current.md §进展记录` 追加一个日期块：
 
 ```markdown
 ### YYYY-MM-DD（周X）
@@ -97,34 +97,34 @@ When authorized, append one date block to `_本周.md §进展记录`:
 - 完成的动作、决定与当前断点。
 ```
 
-Keep reasoning detail in project files.
+推理细节留在项目文件。
 
-### 7. Route unresolved items
+### 7. 分流未决项
 
-- S/N items: leave the next action in the project/workbench.
-- C items: state the exact target, proposed change, and why a verdict is required; do not imply completion.
+- S/N 级项目：把下一动作留在项目文件或工作台。
+- C 级项目：写清目标、拟议变更和需要裁决的原因；不得暗示已经完成。
 
-### 8. Add the Sunday work review
+### 8. 接入周日工作复审
 
-If the logical date is Sunday, invoke `merak-weekly-review` for work-layer review and week archiving. In unattended mode it must not wait for reflection or C verdicts.
+逻辑日为周日时，调用 `merak-weekly-review` 复审工作层并归档当周。无人值守模式不得等待反思或 C 级裁决。
 
-Memory consolidation is not part of this call; the scheduled automation invokes `merak-dream` after work-layer stages finish.
+本调用不做记忆统合；排程在工作层阶段完成后调用每日做梦（`merak-dream`）。
 
-### 9. Complete the handoff
+### 9. 完成交接
 
-Report in natural language:
+用自然语言报告：
 
-- logical date and work phases captured
-- files updated
-- closed nodes and unresolved verdicts
-- whether weekly work review ran
-- confirm that memory metabolism is deferred to merak-dream
+- 逻辑日期与已捕获的工作阶段；
+- 已更新文件；
+- 已闭节点与未决裁决；
+- 是否运行周级工作复审；
+- 确认记忆代谢已交给每日做梦（`merak-dream`）。
 
-For a goodbye-triggered run, finish the workflow before answering the goodbye.
+由道别触发时，完成全部流程后再回应道别。
 
-## Do not
+## 禁止事项
 
-- Do not scan or clear an inbox.
-- Do not nominate or promote semantic entries.
-- Do not use a work summary as a substitute for transcript replay.
-- Do not invent completion when a C-level shared write was held.
+- 不扫描或清空收件箱。
+- 不提名或升格语义记忆条目。
+- 不用工作摘要代替会话转写回放。
+- C 级共享写入暂缓时，不得伪造完成状态。

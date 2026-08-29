@@ -1,44 +1,44 @@
 ---
 name: close-node
-description: Close a completed Tianxuan work node across project authority files, progress, weekly records, and handoff pointers. Use when a subproblem, decision, task, or continuous work segment has genuinely closed. Memory writing is limited to one controlled L1 exception with at least two independent events; all ordinary extraction waits for daily-dream.
+description: 在项目权威文件、推进记录、本周流水和交接指针之间闭合 [AI 名字] 已完成的工作节点。子问题、决策、任务或连续工作段真正收束时使用。记忆写入仅允许一个受控 L1 例外，且必须有至少两个独立事件；普通提取全部留给每日做梦。
 ---
 
-# Close Node
+# 闭合节点（`close-node`）
 
-Synchronize a closed work node before changing direction. Keep project truth and reusable schema separate.
+切换方向前同步已经闭合的工作节点。项目事实与可复用模式必须分开落位。
 
-## Boundaries
+## 边界
 
-- Shared project, LTM, USER, and weekly files require current authorization.
-- Always make the main-document judgment explicit.
-- Do not write semantic memory, identity layers, hooks, or runtime configuration.
-- Do not read/write `episodic_inbox.md`; it is retired.
-- The only in-presence pool write allowed is the L1 exception in `§记忆例外`.
-- Send MEMORY_LOG text to storage-agent; never edit either private log directly.
+- 共享项目、长期记忆、USER 与本周文件需要当前授权。
+- 必须明确给出主文档判断。
+- 不写语义记忆、身份层、钩子或运行时配置。
+- 不读写已退役的 `episodic_inbox.md`。
+- 在场状态唯一允许的记忆池写入是 `§记忆例外` 中的 L1 例外。
+- 把 `MEMORY_LOG` 定稿文本交给 `storage-agent`；禁止直接编辑两份私有日志。
 
-## Loading chain
+## 加载链
 
-**Upstream**: model self-detection; explicit “close this / next / done”; daily-dream phase A missed-node scan.
+**上游**：模型自检；用户明确表达“收束这个”“下一步”“做完了”；`daily-dream` A 段漏节点扫描。
 
-**Downstream**: project main document/overview/progress, `_本周.md`, and optionally `episodic_memory.md`.
+**下游**：项目主文档、`_overview.md`、`_progress/`、`_current.md`，以及满足例外时的 `episodic_memory.md`。
 
-**Peers**: `write-progress`, `new-file`, `daily-dream`, `daily-dream`.
+**同级技能**：`write-progress`、`new-file`、`daily-dream`、`week-sync`。
 
-## Trigger test
+## 触发判定
 
-A node is closed only if its local success criterion is met: a decision is fixed, a subproblem is solved, an artifact is delivered and checked, or the current segment has a stable breakpoint. Mere fatigue, context length, or topic drift is not closure.
+只有局部成功标准已经满足，节点才算闭合：决策已定、子问题已解、产物已交付并检查，或当前工作段已经形成稳定断点。疲劳、上下文变长或话题漂移都不构成闭合。
 
-If closure is ambiguous, ask. If the user explicitly ordered closure, proceed.
+闭合状态有歧义时询问；用户已经明确要求闭合时直接执行。
 
-## Work-layer transaction
+## 工作层事务
 
-### 1. Locate the authority layer
+### 第 1 步 · 定位权威层
 
-Identify the active project/work line and read its `_overview.md` plus the progress pointer covering this node. For cross-project work, choose one primary authority source and use pointers elsewhere.
+识别当前项目或工作线，读取其 `_overview.md` 和覆盖本节点的推进指针。跨项目工作只选一个主权威源，其他位置仅保留指针。
 
-### 2. Judge the main document
+### 第 2 步 · 判断主文档
 
-Always output:
+必须输出：
 
 ```text
 主文档判断：[需要更新 / 不需要更新]
@@ -46,59 +46,59 @@ Always output:
 若不需要：具体理由
 ```
 
-The main document needs updating when the node adds or changes any of:
+节点新增或改变以下任一内容时，主文档需要更新：
 
-- evidence, case, or data supporting/refuting an existing claim
-- theoretical anchor or key definition
-- literature support
-- durable decision affecting a boundary or design principle
-- top-level framework
+- 支持或反驳既有结论的证据、案例或数据；
+- 理论锚点或关键定义；
+- 文献支持；
+- 影响边界或设计原则的稳定决策；
+- 顶层框架。
 
-Wait for C verdict before editing a shared main document. In unattended scheduled mode, hold the write and continue.
+编辑共享主文档前等待 C 级裁决。无人值守排程中把该写入挂起并继续处理其余部分。
 
-### 3. Update overview and progress
+### 第 3 步 · 更新总览与推进记录
 
-When authorized:
+获得授权后：
 
-- `_overview.md`: current state, exact breakpoint, live questions, new file pointers
-- `_progress/`: invoke `write-progress` to preserve the reasoning chain
-- mark transitions with the project's existing transition convention
+- `_overview.md`：当前状态、精确断点、现存问题和新文件指针；
+- `_progress/`：调用写入推进记录技能（`write-progress`）保留推理链；
+- 按项目既有约定标记段间承接。
 
-Create Markdown files only through `new-file`.
+新建 Markdown 文件只能通过 `new-file`。
 
-### 4. Update the weekly ledger
+### 第 4 步 · 更新本周流水
 
-When authorized, append/extend the logical-date work block and update only checkboxes proven complete.
+获得授权后，追加或扩展对应逻辑日工作段；只勾选已有证据证明完成的任务。
 
-### 5. Record unresolved items
+### 第 5 步 · 记录未决项
 
-Leave each unresolved item with owner, dependency, next action, and authority target.
+每个未决项都要写明负责人、依赖、下一动作和授权目标。
 
 ## 记忆例外
 
-The normal path is **no daytime pool write**: Codex JSONL preserves the node and `daily-dream` extracts it at night.
+常规路径是**白天不写记忆池**：Codex JSONL 保留节点，`daily-dream` 在夜间提取。
 
-Write directly to `episodic_memory.md` only when all conditions hold:
+仅在以下条件全部成立时直接写入 `episodic_memory.md`：
 
-1. the node is explicitly closed;
-2. at least two independent events—not repeated mentions of one event—support the same pattern;
-3. the result is a reusable `trigger situation -> action/prediction`, not a project fact;
-4. it passes `00.memory_agent.md §身份层前置过滤` and `§L0→L1 升格抽象红线`;
-5. full-table comparison shows it is not an existing schema hit.
+1. 节点已经明确闭合；
+2. 至少两个独立事件支持同一模式，同一事件的重复提及不计；
+3. 结果是可复用的“触发情境 → 行动/预测”，且不是项目事实；
+4. 通过 `00.memory_agent.md §身份层前置过滤` 与 `00.memory_agent.md §L0→L1 升格抽象红线`；
+5. 全表对照证明它没有命中既有模式。
 
-Then:
+随后：
 
-- write one-star `活动` L1 with `语境：跨情景` or the exact project context;
-- if it hits an existing entry, strengthen that entry instead of creating another;
-- never write a candidate from a single ordinary event;
-- never promote to semantic here;
-- send one compact log line to storage-agent with node, operation, and evidence anchors.
+- 写入一星 `活动` L1，并标注 `语境：跨情景` 或精确项目语境；
+- 命中既有条目时强化原条目，不另建新条目；
+- 禁止根据单个普通事件写候补；
+- 本技能禁止升入语义记忆；
+- 向 `storage-agent` 发送一行精简流水，包含节点、操作和证据锚点。
 
-If any condition fails, write nothing; the transcript remains available to the dream.
+任一条件不成立都保持零写入；转写仍会留给夜间梦处理。
 
-## Verification
+## 验证
 
-- Re-read touched project/work entries.
-- Check pointers with `rg` and ensure new anchors are unique.
-- If L1 changed, verify entry fields/state/count and U+FFFD=0.
-- Report main-document verdict, files updated/proposed, current breakpoint, and whether the L1 exception fired.
+- 重读本轮触及的项目与工作条目。
+- 用 `rg` 检查指针，并确认新锚点唯一。
+- L1 发生变化时，核验条目字段、状态、数量及 U+FFFD=0。
+- 报告主文档判断、已更新或拟更新文件、当前断点，以及 L1 例外是否触发。

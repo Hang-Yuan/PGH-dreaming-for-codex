@@ -1,57 +1,57 @@
 ---
 name: quarterly-archive
-description: Detect or execute a quarterly archive for an explicitly named Sunday. Use detect mode when weekly-dream reaches a quarter point or the user asks whether a quarter is due. Use execute mode only after the user explicitly authorizes the archive in the current session. Require --mode and --date; never infer them or upgrade detect to execute.
+description: 对明确指定的周日执行季度归档检测或归档操作。周级做梦到达季度点、用户询问是否到季度点时使用检测模式；仅在用户当前会话明确授权归档后使用执行模式。必须显式提供模式与日期，禁止自行推算参数或把检测模式升级为执行模式。
 ---
 
-# Quarterly Archive
+# 季度归档（`quarterly-archive`）
 
-`detect` evaluates and inventories; `execute` moves the inventoried ranges. Quarterly archive execution is C-level. The automatic night chain always stops at detect.
+检测模式（`detect`）负责判定和清点；执行模式（`execute`）负责移动已清点范围。季度归档执行属于 C 级动作，自动夜链永远停在检测模式。
 
-## Step 1 · Validate parameters and execution authority
+## 第 1 步 · 校验参数与执行授权
 
-Require `--date YYYY-MM-DD --mode detect|execute`; the date must be Sunday.
+必须提供 `--date YYYY-MM-DD --mode detect|execute`，目标日期必须是周日。
 
-For execute, also require both the user's explicit archive authorization in the current human session and a matching quarter-archive pending item in the current-state authority file. A historical pending item is not current authorization; current authorization does not replace the detected inventory.
+使用执行模式时还必须同时满足：用户在当前真人会话明确授权归档；`<WORKSPACE_ROOT>/Long_Term_Memory/_pending_verdicts.md` 中存在匹配的季度归档待裁项。历史待裁项不能充当当前授权，当前授权也不能替代检测模式生成的清单。
 
-Any failure is a zero-write REJECT.
+任一条件失败都返回 `REJECT`，零写入。
 
-## Step 2 · Recompute the quarter point
+## 第 2 步 · 重新计算季度点
 
-Report separately:
+分别报告：
 
-- whether target Sunday plus seven days crosses quarter/year;
-- unarchived weekly-section count since the previous quarterly archive;
-- their OR result `quarter_point`.
+- 目标周日加七天后是否跨季度或年份；
+- 上次季度归档后尚未归档的周录节数；
+- 两项取或后的 `quarter_point` 结果。
 
-False in detect mode is a normal zero-write completion. False in execute mode rejects a stale request.
+检测模式下结果为假时正常零写入结束；执行模式下结果为假时拒绝该过期请求。
 
-## Step 3 · Detect mode: inventory and propose
+## 第 3 步 · 检测模式：清点并生成提案
 
-Ask storage-agent to inventory, without moving content:
+派 `storage-agent` 只读清点，禁止移动内容：
 
-- the target quarter's detailed weekly-record sections;
-- Focus Zone weekly archive files already present;
-- target-quarter MEMORY_LOG entries and all currently dormant episodic rows.
+- `Long_Term_Memory/weekly.md` 中目标季度的周录节；
+- `00 Focus Zone` 已存在的周归档文件；
+- 目标季度的 `MEMORY_LOG` 条目，以及当前全部休眠态情景记忆行。
 
-Preserve the other two counts when one zone cannot be scanned, and name the failure. At a true quarter point, append one idempotent pending proposal containing the quarter and three counts. Create no archive file and remove no source content.
+某一区域无法扫描时，保留另外两区的读数并点名失败区域。命中季度点后，向 `<WORKSPACE_ROOT>/Long_Term_Memory/_pending_verdicts.md` 追加一条包含季度和三项数量的幂等待裁提案；不创建归档文件，也不移除任何源内容。
 
-## Step 4 · Execute mode: move three zones in order
+## 第 4 步 · 执行模式：按顺序移动三区内容
 
-For each zone, create and verify the target before removing the source range:
+每一区都必须先创建并校验目标文件，再移出源范围：
 
-1. move the quarter's weekly sections to the LTM archive and leave one pointer;
-2. verify Focus weekly files are present; report missing weeks rather than inventing them;
-3. move quarter MEMORY_LOG entries through storage-agent, verify strict UTF-8 and U+FFFD=0, then clear only rows still dormant at execution time.
+1. 把本季度周录节移入长期记忆归档，并在源处留下一个指针；
+2. 核验 `00 Focus Zone` 的本季度周文件是否齐全；缺周只报告，禁止伪造；
+3. 通过 `storage-agent` 移动本季度 `MEMORY_LOG` 条目，严格校验 UTF-8 且 U+FFFD=0，然后只清理执行时仍处于休眠态的行。
 
-Archive means move plus pointer, not copy or backup. Never delete an archive file. Stop before the next source deletion on a size, encoding, or load-chain failure.
+归档的含义是移动并保留指针，不等同于复制或备份。禁止删除归档文件；遇到大小、编码或加载链失败时，必须在下一次源内容移除前停止。
 
-## Step 5 · Verify, log, and clear pending state
+## 第 5 步 · 验证、落账并摘除待裁项
 
-Verify load-chain reachability, moved counts, source/target ranges, and dormant before/after counts. Finalize the archive log payload and send it to storage-agent. Remove only the matching pending item after every receipt passes.
+核验加载链可达性、移动数量、源与目标范围，以及休眠态前后数量。定稿归档流水并交给 `storage-agent` 落盘；所有回执通过后，才可移除匹配的待裁项。
 
-## Boundaries
+## 边界
 
-- Detect never executes; execute never accepts an unattended caller.
-- Never infer date or mode, alter scheduling, or advance the daily probe.
-- Never delete archive files or modify identity/runtime layers.
-- Never read or write MEMORY_LOG/ITERATION_LOG directly.
+- 检测模式永不执行归档；执行模式永不接受无人值守调用。
+- 禁止自行推算日期或模式，禁止修改排程或推进日级探针。
+- 禁止删除归档文件，禁止修改身份层或运行时层。
+- 禁止直接读写 `MEMORY_LOG` / `ITERATION_LOG`。

@@ -1,103 +1,81 @@
 ---
 name: week-sync
-description: Run [AI 名字]'s lightweight startup synchronization. Use automatically on every new/compacted session to summarize the current week and last work breakpoint, verify the last_dream probe, backfill up to three missed effective workdays through daily-dream, and remind about an unfinished Sunday work review.
+description: 运行 [AI 名字] 的轻量启动同步。每次新会话或上下文压缩后自动使用：汇总本周状态与上次工作断点，校验最近做梦探针，通过每日做梦补跑最多三个缺失的有效工作日，并提醒尚未完成的周日工作复盘。
 ---
 
-# Week Sync
+# 周同步（`week-sync`）
 
-Restore work orientation and verify that the off-line memory loop survived the previous night.
+恢复工作方位，并核验离线记忆闭环是否顺利跨过昨夜。
 
-## Boundaries
+## 边界
 
-- Read-only except when a missing dream triggers the N-level `daily-dream` backfill.
-- Do not read episodic/semantic pools during a healthy startup.
-- Do not edit `_本周.md`, LTM, or project files.
-- Do not inspect MEMORY_LOG directly; use storage-agent only when probe/log consistency is disputed.
+- 默认只读；仅在梦断档触发 N 级 `daily-dream` 补跑时产生写入。
+- 健康启动时不读取情景记忆池或语义记忆池。
+- 不编辑 `_current.md`、长期记忆或项目文件。
+- 不直接检查 `MEMORY_LOG`；只有探针与日志一致性存在争议时才派 `storage-agent` 读取。
 
-## Loading chain
+## 加载链
 
-**Upstream**: `AGENTS.md §B · 启动序列` step 5.
+**上游**：`AGENTS.md §B · 启动序列` 第 5 步。
 
-**Inputs**: `_本周.md`, `<ASSISTANT_ROOT>/MEMORY/last_dream.md`.
+**输入**：`_current.md`、`<WORKSPACE_ROOT>/MEMORY/last_dream.md`。
 
-**Peers**: `daily-dream` for missed-date recovery; `daily-dream 周段` for Sunday work review.
+**同级技能**：`daily-dream` 负责缺日恢复；`daily-dream` 的周段分支负责周日工作复盘。
 
-## Startup workflow
+## 启动流程
 
-### 1. Summarize the week
+### 第 1 步 · 汇总本周
 
-Read `_本周.md` task list and latest substantive progress date. Report:
+读取 `_current.md` 的任务清单与最近实质进展日期，报告：
 
-- current week and weekday position
-- checked/total task count, explicitly noting when ledger checkboxes lag real progress
-- one-sentence latest progress summary
+- 当前周次与本周第几天；
+- 已勾选任务数/任务总数；当清单勾选落后于真实进度时必须明确说明；
+- 最近进展的一句话摘要。
 
-### 2. Verify the dream probe
+### 第 2 步 · 校验梦探针
 
-Use `00.memory_agent.md §逻辑日期`.
+使用 `00.memory_agent.md §逻辑日期` 的口径。
 
 ```text
-expected completed dream date = current logical date - 1 calendar day
+应完成梦日期 = 当前逻辑日期 - 1 个自然日
 ```
 
-Read `last_dream.md §完成探针`.
+读取 `last_dream.md` 的唯一一行完成探针。
 
-- Probe >= expected date: healthy; say nothing extra.
-- Probe behind: identify missed dates and determine which are effective workdays from `_本周.md`/week archives.
-- Probe missing or unparsable: treat as a failed probe, not proof that no dream ran.
+- 探针日期不早于应完成日期：健康，不额外展开。
+- 探针落后：列出缺失日期，并根据 `_current.md` 与周归档判断其中哪些是有效工作日。
+- 探针缺失或无法解析：按探针失败处理，不能据此断言梦从未运行。
 
-### 3. Backfill missed dreams
+### 第 3 步 · 补跑缺失梦
 
-On the **first human session of the day**, when the probe is behind, invoke `daily-dream` in the background oldest-first for at most the latest three missed effective workdays. One logical day per run.
+当天**首个真人会话**发现探针落后时，在后台调用每日做梦技能（`daily-dream`）补跑。先截取最近三个缺失有效工作日的可救窗口，再在窗口内从最早日期开始执行；每次只处理一个逻辑日。
 
-- Do not ask for permission: pool operations are N-level and this is the survival backstop. Say one line before starting (“last night's consolidation didn't run; I'm backfilling <date> in the background”), then report the result.
-- On later sessions the same day, report status only — the first session already dispatched it.
-- Never skip an earlier failed date and advance the probe past it.
-- If more than three effective workdays are missing, process the latest allowed window and report the older accepted signal loss.
-- If extraction or commit fails, **leave the probe unchanged** and report the exact failure. The next day's first session retries.
+- 不询问许可：记忆池操作属于 N 级，本步骤是生存兜底。开跑前只说一句“昨夜固化没有跑成，我正在后台补跑 <日期>”，结束后再回报结果。
+- 当天后续会话只报告状态；首会话已经派出补跑。
+- 禁止跳过较早的失败日期后把探针推进到更晚日期。
+- 缺失超过三个有效工作日时，只处理最近的可救窗口，并披露更早信号已接受丢失。
+- 抽取或提交失败时，**保持探针不动**并报告精确失败原因；次日首会话再次尝试。
 
-**Why automatic rather than a prompt**: a miss is caused by sleep, shutdown, or a dropped network — all of which happen overnight with nobody present. A prompt makes recovery depend on the user noticing it. One lost day is cheap; a lost week leaves the memory system with only its daytime half, and the loss is silent.
+**自动补跑原因**：缺勤通常由睡眠、关机或断网造成，这些情况都发生在无人值守的夜间。只给提示会让恢复取决于用户是否注意到；连续漏跑会让记忆系统只剩白天半链，而且损失没有显式报警。
 
-**The boundary hour is deployment-specific.** Read the current value from `AGENTS.md §时间感知` (written by `install_schedule.py` from the deployer's sleep/wake answers; any whole hour in 02:00–06:00). **Never assume 06:00 or a 06:10 run time.** For an early riser with a 03:00 boundary, work done at 04:00 already belongs to the new day; computing with 06:00 assigns it to the previous one, so both the “missed” and “healthy” verdicts land on the wrong date. The consolidation run fires at boundary + 30 minutes, so at physical times before the boundary the expected-date formula naturally points at the last closed logical day.
+**日界线因部署而异。** 从 Codex 初始化访谈写入的 `AGENTS.md §时间感知` 读取，禁止假定日界线为 06:00 或运行时刻为 06:10。原生自动化任务在日界线后 30 分钟触发。
 
-### 3b. Verify the first natural scheduled run
+### 第 3b 步 · 校验原生自动化任务地面证据
 
-On the **first human session of the day**, also run the acceptance consumer:
+当天首个真人会话中，只有以下证据同时成立才判昨夜运行健康：Codex 自动化任务历史存在计划触发的终态运行；匹配的 `dream_receipts/YYYY-MM-DD.json` 为 `COMMITTED`；`last_dream.md` 指向同一天。手动立即运行只能验证工作流，不能证明每日排程已经自然触发。
 
-```bash
-python3 ~/.pgh/scripts/codex/verify_first_run.py --runtime codex --assistant-root <ASSISTANT_ROOT>
-```
+### 第 4 步 · 检查周日工作复盘
 
-Use the copy under `~/.pgh/scripts/codex/` — the temporary clone used for deployment is usually gone.
+仅在逻辑日期为周日时执行：
 
-Exit code 1 only means something is still pending (including the normal "expected time hasn't
-arrived yet"); it is not an error. Read the pending items back to the user.
+- `_current.md` 已含 `### 本周产出` 时不提醒。
+- 否则提示：`今天是周日，工作层周复盘还没完成。要现在开始吗？`
 
-What it checks: the scheduler's own structured receipt (`~/.pgh/natural_runs.codex.jsonl`), plus
-ground evidence, plus the job's state at verification time. A receipt only records
-`source=os-scheduler` when the environment carried the proof that this install wrote into the OS
-job definition; running the wrapper by hand records `manual-wrapper` and does not turn anything
-green. That distinction is deliberate — when the schedule was never installed correctly, the user
-has to remember to backfill every single day, and one forgotten day is silently lost.
+该提醒指向 `daily-dream` 周段；周日记忆固化仍归排程梦处理。
 
-**Never describe a manual wrapper run as "the first natural scheduled run has happened."** That is
-only a wrapper success-path test. A natural run exists once the OS job fires on time (or catches up
-on wake) and this script issues the receipt.
+### 第 5 步 · 恢复上次断点
 
-Once both `acceptance` flags are verified, stop running this step.
-
-### 4. Check Sunday work review
-
-Only on a Sunday logical date:
-
-- If `_本周.md` already contains `### 本周产出`, do not remind.
-- Otherwise say: `今天是周日，工作层周复盘还没完成。要现在开始吗？`
-
-This reminder is for `daily-dream 周段`; Sunday memory consolidation remains the scheduled dream's job.
-
-### 5. Restore the last breakpoint
-
-From the latest substantive progress date, list every work segment:
+从最近实质进展日期提取并列出每个工作段：
 
 ```markdown
 **上次工作**（YYYY-MM-DD）：
@@ -105,8 +83,8 @@ From the latest substantive progress date, list every work segment:
   → 关联文件：[file1] · [file2]
 ```
 
-If the user's first message is “continue / continue yesterday / where were we,” immediately read the linked files and give a full breakpoint reconstruction.
+用户首句表达“继续”“继续昨天”“上次到哪”时，立即读取关联文件并完整重建断点。
 
-## Completion
+## 完成标准
 
-Keep the startup report concise. Include dream recovery only when it actually ran or failed. Do not expose internal system-report labels in ordinary conversation.
+启动简报保持简洁。只有补梦实际运行或失败时才写入恢复情况；普通对话不得暴露内部系统报告标签。

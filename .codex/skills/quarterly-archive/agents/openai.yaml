@@ -1,4 +1,4 @@
 interface:
-  display_name: "Quarterly Archive"
-  short_description: "Detect quarter points; execute only with current C approval"
-  default_prompt: "Use $quarterly-archive with explicit --mode and --date; never upgrade detect to execute or archive without the user's current authorization."
+  display_name: "季度归档"
+  short_description: "检测季度点；仅在当前 C 级授权后执行归档"
+  default_prompt: '使用季度归档技能（$quarterly-archive），并显式提供模式参数（`--mode`）与日期参数（`--date`）；禁止把检测模式升级为执行模式，未经用户当前授权不得执行归档。'

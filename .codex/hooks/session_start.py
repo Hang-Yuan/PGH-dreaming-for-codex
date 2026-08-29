@@ -4,8 +4,8 @@ from pathlib import Path
 
 
 FILES = [
-    ("persona SOUL", Path("<ASSISTANT_ROOT>/SOUL/persona/persona_SOUL.md")),
-    ("USER", Path("<ASSISTANT_ROOT>/USER/USER.md")),
+    ("persona SOUL", Path("<WORKSPACE_ROOT>/SOUL/persona/persona_SOUL.md")),
+    ("USER", Path("<WORKSPACE_ROOT>/USER/USER.md")),
 ]
 
 
