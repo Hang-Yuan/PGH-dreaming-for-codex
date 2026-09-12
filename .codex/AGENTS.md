@@ -2,7 +2,7 @@
 
 ## §-1 · 部署 / 迁移协议（首次部署专用 / 完成后 AI 自删本节）
 
-**触发条件**：用户把 Codex 版 PGH 梦境系统（v6.2.2）GitHub 链接发给 Codex，并要求“帮我装到本机”或“迁移旧 PGH”。
+**触发条件**：用户把 Codex 版 PGH 梦境系统（v6.2.3）GitHub 链接发给 Codex，并要求“帮我装到本机”或“迁移旧 PGH”。
 
 **迁移来源（禁止新装）**：`https://github.com/Hang-Yuan/codex-code-harness`（v5 旧版）只作存量取证源。用户拿那个链接来要求新装时，重定向到本仓库。
 
@@ -84,9 +84,10 @@
 
 1. 按 `docs/schedule_interview.md` 推算日界线与固化时刻，连同 IANA 时区念给用户确认。
 2. 把边界小时同步写入本文件“时间感知”与 `MEMORY/00.memory_agent.md §逻辑日期`；把 IANA 时区写入本文件“时间感知”。
-3. 使用 Codex 原生自动化任务管理能力，先查看现有任务，再原位更新唯一一条 `daily-dream`。
-4. 提示词固定为 `使用 $daily-dream 处理最近一个已经闭合的逻辑日；严格执行事务闸，并报告提交收据。`；项目为 `<WORKSPACE_ROOT>` 所在项目；执行环境为 `local`。
-5. 保存后回读，核对 `ACTIVE` 状态、每日时刻、项目、模型、推理强度与提示词；禁止创建独立的周日或季度自动化任务。
+3. 使用 Codex 原生自动化任务管理能力，先查看现有任务，再原位更新唯一一条 `daily-dream`；任务类型为 `cron`，并显示在 Codex 应用的“定时任务”页。
+4. 用 Codex 项目列表解析 `<WORKSPACE_ROOT>` 对应的 `projectId`；`executionEnvironment=local`，每日 `rrule` 设为日界线后 30 分钟。
+5. 提示词固定为 `使用 $daily-dream 处理最近一个已经闭合的逻辑日；严格执行事务闸，并报告提交收据。`。
+6. 保存后按同一任务标识回读，核对 `ACTIVE` 状态、每日时刻、项目、模型、推理强度、`local` 环境与提示词；禁止创建独立的周日或季度自动化任务。
 
 **回报纪律**：自动化任务回读成功只证明配置已保存。首跑通过需要 Codex 计划触发运行历史、目标日 `COMMITTED` 梦收据与同日 `last_dream.md` 三类证据。
 

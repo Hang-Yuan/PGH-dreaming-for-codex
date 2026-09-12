@@ -340,42 +340,16 @@ def resolve_boundary_hour(explicit: int | None = None) -> tuple[int, str]:
                                "若本机日界线不是这个值，抽取窗口会整体偏移")
 
 
-def _receipt_timezone() -> str | None:
-    """从安装收据取 IANA 时区名；取不到返回 None。
-
-    已装机器（install_schedule 部署的）时区权威在收据里：先读顶层 `timezone_iana`，
-    缺省或 `UNRESOLVED` 时落到 `acceptance` 嵌套（旧安装器把验收时区写在那里）。
-    v6.2.2 原生任务部署没有收据，返回 None，继续向下走 AGENTS.md。
-    收据里的值也可能是坏的（手改 / 半截写入），过不了 `ZoneInfo` 的一律不信。
-    """
-    path = Path.home() / ".pgh" / "schedule_receipt.codex.json"
-    try:
-        data = json.loads(path.read_text(encoding="utf-8"))
-    except (OSError, ValueError):
-        return None
-    for cand in (data.get("timezone_iana"),
-                 (data.get("acceptance") or {}).get("timezone_iana")):
-        if not cand or cand == "UNRESOLVED":
-            continue
-        try:
-            ZoneInfo(cand)
-        except (KeyError, ValueError):
-            continue
-        return cand
-    return None
-
-
 def resolve_timezone(explicit: str | None = None) -> tuple[str, str]:
     """求当前部署的 IANA 时区名。返回 `(时区名, 证据来源)`。
 
-    读取顺序：显式参数 → 安装收据 → Codex AGENTS.md §时间感知 → 兜底常量。
+    读取顺序：显式参数 → Codex AGENTS.md §时间感知 → 兜底常量。
+
+    Codex 原生自动化任务不产生 PGH 排程收据。旧 OS 调度器留下的收据可能与用户后来
+    确认的作息冲突，不能参与当前窗口计算。
     """
     if explicit:
         return explicit, "--timezone 显式指定"
-
-    receipt = _receipt_timezone()
-    if receipt:
-        return receipt, "安装收据 schedule_receipt.codex.json"
 
     authority = Path.home() / ".codex" / "AGENTS.md"
     try:

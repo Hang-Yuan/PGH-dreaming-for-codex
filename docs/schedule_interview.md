@@ -1,9 +1,9 @@
 ---
 title: Codex 原生自动化任务访谈
 type: deployment-contract
-version: 2.0
+version: 2.1
 status: active
-updated: 2026-08-04
+updated: 2026-09-12
 ---
 
 # Codex 原生自动化任务访谈
@@ -56,21 +56,21 @@ updated: 2026-08-04
 
 ## 创建或更新唯一自动化任务
 
-通过 Codex 原生自动化任务管理能力执行。禁止直接编辑自动化任务的 TOML 或状态数据库。
+通过 Codex 原生自动化任务管理能力执行。创建或更新成功后，任务必须显示在 Codex 应用的“定时任务”页。禁止直接编辑自动化任务的 TOML 或状态数据库。
 
 自动化任务合同：
 
 | 字段 | 值 |
 |---|---|
-| 类型（`kind`） | 独立项目自动化任务 |
+| 类型（`kind`） | `cron` |
 | 标识（`id`） | 更新既有任务时保留原标识 |
 | 名称（`name`） | 每日做梦（`daily-dream`） |
 | 提示词（`prompt`） | `使用 $daily-dream 处理最近一个已经闭合的逻辑日；严格执行事务闸，并报告提交收据。` |
-| 周期（`cadence`） | 每天，日界线后 30 分钟 |
-| 项目（`project`） | `<WORKSPACE_ROOT>` 所在项目 |
-| 执行环境（`execution`） | `local` |
+| 周期（`rrule`） | `FREQ=DAILY;BYHOUR=<日界线小时>;BYMINUTE=30;BYSECOND=0` |
+| 项目（`projectId`） | 先从 Codex 项目列表解析 `<WORKSPACE_ROOT>` 对应的项目标识 |
+| 执行环境（`executionEnvironment`） | `local` |
 | 状态（`status`） | 用户确认后 `ACTIVE` |
-| 模型 / 推理强度 | 沿用用户为该任务明确确认的组合 |
+| 模型（`model`）/ 推理强度（`reasoningEffort`） | 沿用用户为该任务明确确认的组合 |
 
 更新前先查看现有自动化任务。命中 `daily-dream` 时原位更新；失败时保留旧任务并回报，不创建重复任务。
 
@@ -105,6 +105,7 @@ updated: 2026-08-04
 ## 机械闸
 
 - 现役发布包不得包含 OS 调度安装脚本或包装器。
+- 旧 `.pgh` 排程收据不得参与时区、日界线或任务状态解析。
 - README、宪法层、技能与架构文档必须把 Codex 原生自动化任务写成唯一自动入口。
 - 每日做梦（`daily-dream`）必须拥有事务与探针；周级做梦（`weekly-dream`）、季度归档（`quarterly-archive`）不拥有排程。
 - 首跑成功必须由 Codex 自动化任务历史和 `COMMITTED` 地面收据共同证明。

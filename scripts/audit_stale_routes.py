@@ -36,6 +36,7 @@ ACTIVE_GLOBS = (
     ".codex/config.toml",
     ".claude/hooks/*.py", ".claude/hooks/*.sh", ".codex/hooks/*.py",
     ".claude/skills/*/SKILL.md", ".codex/skills/*/SKILL.md",
+    ".claude/skills/*/scripts/*.py", ".codex/skills/*/scripts/*.py",
     ".claude/agents/*.md", ".codex/agents/*.md",
     "workspace/MEMORY/00.memory_agent.md",
     "workspace/MEMORY/00.记忆区_agent.md",
@@ -86,6 +87,11 @@ class Rule:
 V5_SKILL_PREFIX = "me" + "rak" + "-"
 
 RULES = [
+    Rule("retired-os-scheduler-artifact",
+         r"schedule_receipt\.codex\.json|install_schedule\.py|"
+         r"run_scheduled_dream\.py|verify_first_run\.py|source=os-scheduler",
+         "仍依赖已撤销的操作系统排程制品。Codex 当前只认原生自动化任务；作息权威在 "
+         "AGENTS.md，任务状态与运行历史由 Codex 自身管理。"),
     Rule("retired-skill",
          r"\b(daily-review|weekly-review|" + V5_SKILL_PREFIX + r"[a-z-]+)\b",
          "指向已退役的 skill 名。现役链是 daily-dream phase A/B，周日条件转 weekly-dream，季度点再转 quarterly-archive detect；"
@@ -199,7 +205,7 @@ def main() -> int:
     if bad:
         print(f"\n合计 {bad} 处未豁免旧路由——修到零再同步 / 发布。", file=sys.stderr)
         return 1
-    print("\n两仓现役权威树零旧路由。")
+    print("\n现役权威树零旧路由。")
     return 0
 
 

@@ -2,7 +2,7 @@
 
 PGH 梦境版（6.2）是供 **Codex** 使用的个人长期协作与记忆骨架。它把工作空间、用户档案、AI 人格、长期工作记忆、私有记忆池、每日代谢、钩子与技能组织成可部署的 Markdown 文件系统。
 
-**当前发布：v6.2.2。** 白天保留完整 L0 会话转写，次晨由 Codex 原生自动化任务调用每日做梦（`daily-dream`）。目标逻辑日为周日时，日链条件转调周级做梦（`weekly-dream`）；季度点只转季度归档检测（`quarterly-archive detect`）。整套系统只有一条每日原生自动化任务。
+**当前发布：v6.2.3。** 白天保留完整 L0 会话转写，次晨由 Codex 原生自动化任务调用每日做梦（`daily-dream`）。目标逻辑日为周日时，日链条件转调周级做梦（`weekly-dream`）；季度点只转季度归档检测（`quarterly-archive detect`）。整套系统只有一条每日原生自动化任务。
 
 架构入口：
 
@@ -66,7 +66,7 @@ PGH 梦境版（6.2）是供 **Codex** 使用的个人长期协作与记忆骨�
 在 Codex 中发送：
 
 ```text
-这是 Codex 版 PGH 梦境系统（release v6.2.2）：https://github.com/Hang-Yuan/PGH-dreaming-for-codex 。请安装到本机；如果已有旧 PGH 内容，先备份并迁移。自动做梦只接 Codex 原生自动化任务。
+这是 Codex 版 PGH 梦境系统（release v6.2.3）：https://github.com/Hang-Yuan/PGH-dreaming-for-codex 。请安装到本机；如果已有旧 PGH 内容，先备份并迁移。自动做梦只接 Codex 原生自动化任务。
 ```
 
 部署流程：
@@ -77,7 +77,7 @@ PGH 梦境版（6.2）是供 **Codex** 使用的个人长期协作与记忆骨�
 4. 替换工作空间、运行时、Python 与身份占位符。
 5. 检测旧内容；先备份，再迁移 USER、SOUL、项目、工作台、长期工作记忆与两池。
 6. 完成初始化访谈。
-7. 通过 Codex 原生自动化任务管理能力创建或更新唯一一条每日任务。
+7. 通过 Codex 原生自动化任务管理能力创建或更新唯一一条每日 `cron` 任务，使其显示在 Codex 应用的“定时任务”页。
 8. 回读自动化任务，确认状态、时刻、项目、模型、执行环境与提示词。
 
 旧 `codex-code-harness` 只供迁移取证，禁止新装：
